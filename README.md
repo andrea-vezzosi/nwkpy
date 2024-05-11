@@ -14,7 +14,7 @@ and install packages
 ```
 conda install python numpy scipy matplotlib pandas mpi4py git
 ```
-build the library: [text](https://packaging.python.org/en/latest/tutorials/packaging-projects/)
+[how to build a library](https://packaging.python.org/en/latest/tutorials/packaging-projects/)
 ```
 % python3 -m pip install --upgrade build
 ```
@@ -44,4 +44,11 @@ pip uninstall nwkpy
 ```
 git init -b main
 ```
-type ```ls -a``` to see the .git repo and the .gitignore file 
+type ```ls -a``` to see the .git repo and the .gitignore file \\
+to be completed...
+
+## Run a calculation on a serial machine
+
+## Run a calculation on a parallel machine
+
+## Use nwkpy to generate a mesh
