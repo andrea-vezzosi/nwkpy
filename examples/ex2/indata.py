@@ -2,7 +2,7 @@ import numpy as np
 import os
 
 cdir = os.path.dirname(__file__)
-outdata_path = cdir+'/OUTDATA/'
+outdata_path = cdir+'/outdata/'
 
 ############ MESH #############
 mesh_name = "./mesh.msh"
@@ -35,7 +35,7 @@ principal_axis_direction='111'
 """
 Simulation temperature. It affects the energy gaps.
 """
-temperature = 4.0
+temperature = 4.0 #K
 
 """
 Rescaling of the P parameter is required in order to avoid the appearance
@@ -43,7 +43,7 @@ of spurious solutions in the 8-band kp model.
 see for example
 B. A. Foreman, Elimination of spurious solutions from eight-bandk·ptheory,Phys. Rev. B56, R12748 (1997)
 
-In what follows, S is the parameter you find at Eq. 6.62 of the following reference
+In what follows, S is the parameter you find at Eq. (6.62) of the following reference
 [1] S.  Birner,  The  multi-band k·phamiltonian  for  heterostructures: Parameters  and  applications,
 in Multi-Band EffectiveMass Approximations(Springer, Cham, 2014), pp. 193-244
 
@@ -65,6 +65,8 @@ rescaling={
     'InAs' : 0.26
 }
 
+Need to be specified for each material in the heterostructure
+
 The rescaling procedure has to be set for each material in the heterostructure
 """
 rescaling={
@@ -72,22 +74,23 @@ rescaling={
     'GaSb' : 'S=0'
 }
 
-""""
-Probably this is unuseful....
-"""
+
+'''
+Used only for broken-gap nanowires
+'''
 mat2partic = {
     'InAs' : 'electron',
     'GaSb' : 'hole'
 }
 
 """"
-The chemical potential, fixed, in eV.
+The chemical potential, fixed, in eV. The zero of the energy is set in the "valence_band_edges" dicttionary.
 """
 chemical_potential = 0.528 #eV
 
 """"
 The eigensolver will look for a finite set of eigenvalues
-around "e_seearch", fixed, in eV.
+around "e_search", fixed, in eV.
 """
 e_search =  0.528 #eV
 
@@ -99,9 +102,9 @@ multiply by two to account for the negative kz values)
 kzin_rel = 0.0
 kzfin_rel = 0.05
 # number of equally spaced kz points
-numkz = 10
+numkz = 4
 
-lattice_constant = 6.0583 #[A] this is the InAs lattice constant
+lattice_constant = 6.0583 #[A] this, for example, is the InAs lattice constant
 
 # absolute kz values
 kzvals = np.linspace(kzin_rel, kzfin_rel, numkz) * np.pi / np.sqrt(3.0) / lattice_constant # [A^-1]
@@ -120,12 +123,13 @@ k = 20
 ############## ELECTROSTATICS ###############
 init_pot_name = None
 
-# if this parameter is true, the modified 
+# if this parameter is true, the modified EFA approach is used (see Ch. 5 of my thesis)
 modified_EFA=True
 
 thr_el=0.8
 thr_h=0.95
 
+# don't remember what this was
 particle_s_components = 'electron'
 particle_p_components = 'electron'
 
@@ -195,7 +199,7 @@ user_defined_params = {
             'lu1' : 20.0,
             'lu2' : 8.5,
             'lu3' : 9.2,
-            'L'  : 0.0,
+            'L'  : 0.0,   # these are calculated from the luttinger params
             'M'  : 0.0,
             'Nm' : 0.0,
             'Np' : 0.0,

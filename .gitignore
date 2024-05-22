@@ -10,6 +10,7 @@
 *.pyo
 *.so
 *.pyd
+*.png
 /build
 /dist
 /doc/build

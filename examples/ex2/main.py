@@ -10,17 +10,17 @@ import numpy as np
 from mpi4py import MPI
 
 # base
-from nwkp import tic, toc
-from nwkp import Logger
+from nwkpy import tic, toc
+from nwkpy import Logger
 
 # input file
 import indata
 
 # interfaces
-from nwkp.fem import Mesh
-from nwkp import BandStructure, PoissonProblem
-from nwkp import FreeChargeDensity, ElectrostaticPotential, DopingChargeDensity
-from nwkp import  _constants
+from nwkpy.fem import Mesh
+from nwkpy import BandStructure, PoissonProblem
+from nwkpy import FreeChargeDensity, ElectrostaticPotential, DopingChargeDensity
+from nwkpy import  _constants
 
 # numerical
 from scipy.sparse import save_npz

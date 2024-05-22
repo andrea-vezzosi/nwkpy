@@ -285,11 +285,13 @@ class FreeChargeDensity:
         c_h = coo_matrix((data_h, (row, col)), dtype=complex, shape=(nn,nn))
 
         dok_el = dok_matrix((c_el.shape),dtype=c_el.dtype)
-        dok_el._update(zip(zip(c_el.row,c_el.col),c_el.data))
+        #dok_el._update(zip(zip(c_el.row,c_el.col),c_el.data))
+        dok_el._dict.update(zip(zip(c_el.row,c_el.col),c_el.data))
         new_c_el = dok_el.tocsc() 
 
         dok_h = dok_matrix((c_h.shape),dtype=c_h.dtype)
-        dok_h._update(zip(zip(c_h.row,c_h.col),c_h.data))
+        #dok_h._update(zip(zip(c_h.row,c_h.col),c_h.data))
+        dok_h._dict.update(zip(zip(c_h.row,c_h.col),c_h.data))
         new_c_h = dok_h.tocsc()
 
         return new_c_el, new_c_h
