@@ -1,7 +1,9 @@
 # 1 How to install nwkpy 
 ## 1.1 Download anaconda3
 This website provides everything you need to know on how to install anaconda: [text](https://docs.anaconda.com/free/anaconda/install/#)
-## 1.2 create your conda environment and install nwkpy
+
+
+## 1.3 Create your conda environment and install nwkpy
 Use the following command to create your own environment
 ```
 conda create --name <env-name>
@@ -12,16 +14,22 @@ conda activate <env-name>
 ```
 and install packages
 ```
-conda install python numpy scipy matplotlib pandas mpi4py git
+% conda install python numpy scipy matplotlib pandas mpi4py git
 ```
 [how to build a library](https://packaging.python.org/en/latest/tutorials/packaging-projects/)
 ```
 % python3 -m pip install --upgrade build
 ```
+## 1.2 Clone the repository on your local machine
+[how to clone the repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
+```
+% git clone https://github.com/YOUR-USERNAME/YOUR-REPOSITORY
+```
+
+## 1.3 build the library
 To build the library just type
 ```
-% python -m build
-```
+python -m build
 ```
 cd dist
 python3 -m pip install nwkp-0.0.1-py3-none-any.whl
