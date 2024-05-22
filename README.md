@@ -31,9 +31,10 @@ To build the library just type
 ```
 python -m build
 ```
+```
 cd dist
 python3 -m pip install nwkp-0.0.1-py3-none-any.whl
-```
+
 check that the library has been installed
 ```
 conda list nwkpy
