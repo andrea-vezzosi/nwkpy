@@ -2,6 +2,7 @@
 ## 1.1 Download anaconda3
 This website provides everything you need to know on how to install anaconda: [text](https://docs.anaconda.com/free/anaconda/install/#)
 my modification to the readme file
+# 3 another mod
 
 ## 1.3 Create your conda environment and install nwkpy
 Use the following command to create your own environment
