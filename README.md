@@ -15,21 +15,24 @@ conda activate <env-name>
 ```
 and install packages
 ```
-% conda install python numpy scipy matplotlib pandas mpi4py git
+conda install python numpy scipy matplotlib pandas mpi4py git
 ```
 [how to build a library](https://packaging.python.org/en/latest/tutorials/packaging-projects/)
 ```
-% python3 -m pip install --upgrade build
+python3 -m pip install --upgrade build
 ```
 ## 1.2 Clone the repository on your local machine
 [how to clone the repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
 ```
-% git clone https://github.com/YOUR-USERNAME/YOUR-REPOSITORY
+git clone https://github.com/andrea-vezzosi
 ```
+You wil be prompted for your GitHub username. The password is your personale Token
+[How to generate your Token](**https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens**)
 
 ## 1.3 build the library
 To build the library just type
 ```
+cd nwkpy
 python -m build
 ```
 ```
