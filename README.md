@@ -24,10 +24,27 @@ python3 -m pip install --upgrade build
 ## 1.2 Clone the repository on your local machine
 [how to clone the repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
 ```
-git clone https://github.com/andrea-vezzosi
+git clone https://github.com/andrea-vezzosi/nwkpy
 ```
 You wil be prompted for your GitHub username. The password is your personale Token
 [How to generate your Token](**https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens**)
+
+## 1.2.1 Create a branch and clone the branch repository on your local machine
+
+Create a branch from your GitHub page (top-left page to list and create branches) 
+
+To clone only your branch and checkout to the specific branch (for pull and push to the specific branch)
+```
+git clone --branch --single-branch <branch name> https://github.com/andrea-vezzosi/nwkpy
+```
+You can clone only the main branch
+```
+git clone --branch --single-branch main https://github.com/andrea-vezzosi/nwkpy
+```
+Check that <branch name> is the target for pull and push
+```
+git remote show origin
+```
 
 ## 1.3 build the library
 To build the library just type
