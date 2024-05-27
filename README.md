@@ -2,9 +2,8 @@
 ## 1.1 Download anaconda3
 This website provides everything you need to know on how to install anaconda: [text](https://docs.anaconda.com/free/anaconda/install/#)
 my modification to the readme file
-# 3 another mod
 
-## 1.3 Create your conda environment and install nwkpy
+## 1.2 Create your conda environment and install nwkpy
 Use the following command to create your own environment
 ```
 conda create --name <env-name>
@@ -21,7 +20,7 @@ conda install python numpy scipy matplotlib pandas mpi4py git
 ```
 python3 -m pip install --upgrade build
 ```
-## 1.2 Clone the repository on your local machine
+## 1.3 Clone the repository on your local machine
 [how to clone the repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
 ```
 git clone https://github.com/andrea-vezzosi/nwkpy
@@ -29,24 +28,31 @@ git clone https://github.com/andrea-vezzosi/nwkpy
 You wil be prompted for your GitHub username. The password is your personale Token
 [How to generate your Token](**https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens**)
 
-## 1.2.1 Create a branch and clone the branch repository on your local machine
+## 1.3.1 Create a branch and clone the branch repository on your local machine
 
-Create a branch from your GitHub page (top-left page to list and create branches) 
+You can create a branch from your GitHub page (top-left of your GigHub page to list and create branches) and pull/push that branch, before marging to the main distribution: 
 
-To clone only your branch and checkout to the specific branch (for pull and push to the specific branch)
+To clone the whole repository (incl ALL branches) and checkout to the specific branch (for pull and push)
+```
+git clone --branch <branch name> https://github.com/andrea-vezzosi/nwkpy
+```
+
+To clone ONLY your branch and checkout to the specific branch (for pull and push)
 ```
 git clone --branch --single-branch <branch name> https://github.com/andrea-vezzosi/nwkpy
 ```
-You can clone only the main branch
+
+To clone ONLY the main branch (for pull and push to the main branch)
 ```
 git clone --branch --single-branch main https://github.com/andrea-vezzosi/nwkpy
 ```
-Check that <branch name> is the target for pull and push
+
+Check which branch is the current target for pull and push
 ```
 git remote show origin
 ```
 
-## 1.3 build the library
+## 1.4 build the library
 To build the library just type
 ```
 cd nwkpy
