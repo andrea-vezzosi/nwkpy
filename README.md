@@ -59,6 +59,7 @@ To build the library just type
 cd nwkpy
 python -m build
 ```
+Now install the library
 ```
 cd dist
 python3 -m pip install nwkp-0.0.1-py3-none-any.whl
@@ -67,7 +68,7 @@ check that the library has been installed
 ```
 conda list nwkpy
 ```
-check that it works
+and check that it works
 ```
 python
 import nwkpy
