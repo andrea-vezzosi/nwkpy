@@ -16,10 +16,6 @@ and install packages
 ```
 conda install python numpy scipy matplotlib pandas mpi4py git
 ```
-[how to build a library](https://packaging.python.org/en/latest/tutorials/packaging-projects/)
-```
-python3 -m pip install --upgrade build
-```
 ## 1.3 Clone the repository on your local machine
 [how to clone the repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
 ```
@@ -53,6 +49,11 @@ git remote show origin
 ```
 
 ## 1.4 build the library
+
+[how to build a library](https://packaging.python.org/en/latest/tutorials/packaging-projects/)
+```
+python3 -m pip install --upgrade build
+```
 To build the library just type
 ```
 cd nwkpy
