@@ -6,7 +6,7 @@ This website provides everything you need to know on how to install anaconda: ht
 As an alternative, you can install Miniconda in your Unix environment. Here is the flow:
 
 
-## 1.2 Create your conda environment and install nwkpy
+## 1.2 Create a conda environment for nwkpy
 Use the following command to create your own environment
 ```
 conda create --name <env-name>
@@ -19,7 +19,7 @@ and install packages
 ```
 conda install python numpy scipy matplotlib pandas mpi4py git
 ```
-## 1.3 Clone the repository on your local machine
+## 1.3 Clone the nwkpy repository on your local machine
 [how to clone the repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
 ```
 git clone https://github.com/andrea-vezzosi/nwkpy
