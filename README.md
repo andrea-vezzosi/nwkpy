@@ -5,7 +5,7 @@ This website provides everything you need to know on how to install anaconda: ht
 
 As an alternative, you can install Miniconda in your Unix environment. Here is the flow:
 
-ANDREA METTI QUI I COMANDI PER INSTALLARE MINICONDA E CONTROLLARE L'INSTALLAZIONE
+ ANDREA METTI QUI I COMANDI PER INSTALLARE MINICONDA E CONTROLLARE L'INSTALLAZIONE
 
 
 ## 1.2 Create a conda environment for nwkpy
