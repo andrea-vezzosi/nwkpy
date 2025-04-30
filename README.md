@@ -1,7 +1,10 @@
 # 1 How to install nwkpy 
 ## 1.1 Download anaconda3
-This website provides everything you need to know on how to install anaconda: [text](https://docs.anaconda.com/free/anaconda/install/#)
-my modification to the readme file
+
+This website provides everything you need to know on how to install anaconda: https://docs.anaconda.com/free/anaconda/install/#
+
+As an alternative, you can install Miniconda in your Unix environment. Here is the flow:
+
 
 ## 1.2 Create your conda environment and install nwkpy
 Use the following command to create your own environment
@@ -22,7 +25,7 @@ conda install python numpy scipy matplotlib pandas mpi4py git
 git clone https://github.com/andrea-vezzosi/nwkpy
 ```
 You wil be prompted for your GitHub username. The password is your personale Token
-[How to generate your Token](**https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens**)
+[How to generate your Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
 
 ## 1.3.1 Create a branch and clone the branch repository on your local machine
 
