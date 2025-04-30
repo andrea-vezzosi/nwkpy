@@ -23,10 +23,13 @@ conda install python numpy scipy matplotlib pandas mpi4py git
 ```
 ## 1.3 Clone the nwkpy repository on your local machine
 
-### 1.3.1
+### 1.3.1 Create your personal GitHub profile
 If you don't have a GitHub personal profile, go to Github.com and create one. Ask the developers to add your profile for access to the nwkpy package.
 
-From your 
+### 1.3.2 Create your personal token
+
+Create your personal Token 
+From your profile, go to the 
 
 [how to clone the repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
 ```
