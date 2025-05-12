@@ -132,8 +132,30 @@ git init -b main
 type ```ls -a``` to see the .git repo and the .gitignore file \\
 to be completed...
 
+# 2 Runnig nwkpy
+
+## 2.1 The mesh file
+
+The main datat of the structure to be simulated is in the mesh file, usually called mesh.msh.
+[to be completed]
+
+### 2.1.1 Using FreeFem to generate a mesh
+
+https://freefem.org/
+[to be completed]
+
+### 2.1.2 Using nwkpy to generate a mesh
+
+Be carefull that the freefem (lowercase) package that comes installed by default on several Linux distributions os an older version and it is not suitable for nwkpy.
+You need to intall FreeFem++. See here for instaructions
+https://doc.freefem.org/introduction/installation.html
+
+The script calling FreeFem++ is in
+
+nwkpy/nwkpy/fem/mesh/
+
 ## Run a calculation on a serial machine
 
 ## Run a calculation on a parallel machine
 
-## Use nwkpy to generate a mesh
+
