@@ -3,11 +3,26 @@
 
 This website provides everything you need to know on how to install anaconda: https://docs.anaconda.com/free/anaconda/install/#
 
-As an alternative, you can install Miniconda in your Unix environment. Here is the flow:
+As an alternative, you can install the lighter Miniconda in your LINUX environment.
+Following the instructions at https://www.anaconda.com/docs/getting-started/miniconda/install :
 
- ANDREA METTI QUI I COMANDI PER INSTALLARE MINICONDA E CONTROLLARE L'INSTALLAZIONE
+> mkdir -p ~/miniconda3
 
+> wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
 
+> bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+
+> rm ~/miniconda3/miniconda.sh
+
+After installing it, close and reopen your terminal application or source the activation script
+
+> source ~/miniconda3/bin/activate
+
+and initialize conda on all available shells with
+
+> conda init --all
+
+ 
 ## 1.2 Create a conda environment for nwkpy
 Use the following command to create your own environment
 ```
