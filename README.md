@@ -5,22 +5,29 @@ This website provides everything you need to know on how to install anaconda: ht
 
 As an alternative, you can install the lighter Miniconda in your LINUX environment.
 Following the instructions at https://www.anaconda.com/docs/getting-started/miniconda/install :
-
-> mkdir -p ~/miniconda3
-
-> wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
-
-> bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
-
-> rm ~/miniconda3/miniconda.sh
-
+```
+mkdir -p ~/miniconda3
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
+bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+rm ~/miniconda3/miniconda.sh
+```
 After installing it, close and reopen your terminal application or source the activation script
-
-> source ~/miniconda3/bin/activate
-
+```
+source ~/miniconda3/bin/activate
+```
 and initialize conda on all available shells with
-
-> conda init --all
+```
+conda init --all
+```
+Now, with
+```
+conda list
+```
+you see the packets installed in the current environment, and with
+```
+conda env list
+```
+the available environments, i.e. the environments that you created on your machine.
 
  
 ## 1.2 Create a conda environment for nwkpy
@@ -28,14 +35,25 @@ Use the following command to create your own environment
 ```
 conda create --name <env-name>
 ```
+(to be consistent among users, <env-name>=nwkp is suggested)
+
 activate the environment
 ```
 conda activate <env-name>
 ```
 and install packages
 ```
-conda install python numpy scipy matplotlib pandas mpi4py git
+conda install python numpy scipy matplotlib pandas git
 ```
+if you need to perform parallel runs (message passing with MPI), install
+```
+conda install mpi4py
+```
+Also, the pip package installer for Python is useful to build the library
+```
+python3 -m pip install --upgrade build
+```
+
 ## 1.3 Clone the nwkpy repository on your local machine
 
 ### 1.3.1 Create your personal GitHub profile
