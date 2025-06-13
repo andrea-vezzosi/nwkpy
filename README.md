@@ -136,8 +136,11 @@ to be completed...
 
 ## 2.1 The mesh file
 
-The main datat of the structure to be simulated is in the mesh file, usually called mesh.msh.
-[to be completed]
+The data of the simulated structure are mapped to a inhomogeneous mesh to be used by the FEM enginge of nwkpy. The mesh file is usually called mesh.msh.
+nwkpy makes use of the FreeFem++ library to generate the mesh. If you need to install FreeFem++ type
+```
+conda install -c conda-forge freefem
+```
 
 ### 2.1.1 Using FreeFem to generate a mesh
 
