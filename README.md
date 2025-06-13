@@ -142,17 +142,16 @@ nwkpy makes use of the FreeFem++ library to generate the mesh. If you need to in
 conda install -c conda-forge freefem
 which FreeFem++
 ```
+Note: the freefem (lowercase) package that comes installed by default on several Linux distributions is an older version, not suitable for nwkpy. You need to intall FreeFem++.
 
 ### 2.1.1 Using FreeFem to generate a mesh
 
-https://freefem.org/
-[to be completed]
+nwkpy comes with a mesh generator. However, if you want to generate a different mesh yourself, checkou https://freefem.org/
+
+Note: to avoid spurious spin-orbit split bands the mesh must be centrosymmetric. This is automatically taken care of by the internal mesh generator of nwkpy discussed in the next session. Non experienced users should use the internal mesh generator.
 
 ### 2.1.2 Using nwkpy to generate a mesh
 
-Be carefull that the freefem (lowercase) package that comes installed by default on several Linux distributions os an older version and it is not suitable for nwkpy.
-You need to intall FreeFem++. See here for instaructions
-https://doc.freefem.org/introduction/installation.html
 
 The script calling FreeFem++ is in
 
