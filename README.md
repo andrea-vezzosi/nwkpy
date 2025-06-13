@@ -140,6 +140,7 @@ The data of the simulated structure are mapped to a inhomogeneous mesh to be use
 nwkpy makes use of the FreeFem++ library to generate the mesh. If you need to install FreeFem++ type
 ```
 conda install -c conda-forge freefem
+which FreeFem++
 ```
 
 ### 2.1.1 Using FreeFem to generate a mesh
