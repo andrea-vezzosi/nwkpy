@@ -109,7 +109,7 @@ python -m build
 Now install the library
 ```
 cd dist
-python3 -m pip install nwkp-0.0.1-py3-none-any.whl
+python3 -m pip install nwkpy-0.0.1-py3-none-any.whl
 ```
 check that the library has been installed
 ```
