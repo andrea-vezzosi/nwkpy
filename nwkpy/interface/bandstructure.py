@@ -19,6 +19,12 @@ from matplotlib.tri import UniformTriRefiner
 import matplotlib.tri as tri
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
+from mpi4py import MPI
+import logging
+import os
+
+logger = logging.getLogger(__name__)
+    
 class BandStructure:
     def __init__(
         self,
@@ -78,7 +84,7 @@ class BandStructure:
             self.logger = logger
         else:
             self.logger = Logger(rank=0,logfile_path='./')
-
+            
         material_list = list(self.mesh.reg2mat.values())
         if spherical_approximation is None:
             spherical_approximation = dict(zip(material_list, [None]*len(material_list)))
@@ -151,13 +157,16 @@ class BandStructure:
         # create solver
         solver_kp = GenEigenProblem()
         
-
         i = 0 # index for k-cycle      
-        
-        for kz in self.kzvals:
-            #self.logger.logga(kz = kz / _constants.length_scale)
-            self.logger.logga(kz = kz)
 
+        # with MPI_debug = True, write debug information to file
+        debug_write(f"Starting computation for {len(self.kzvals)} k-points \n")
+
+        for kz in self.kzvals:
+            
+            # with MPI_debug = True, write debug information to file
+            debug_write(f"Computing for kz={kz}\n") 
+            
             # k dot p variational form
             v = Schrodinger(
                 kz = kz,
@@ -168,8 +177,11 @@ class BandStructure:
             # assembly global matrices
             solver_kp = GenEigenProblem()
             solver_kp.assembly(self.fsP, v)
+            
 
-            self.logger.logga(search_energy = self.e_search)
+            # self.logger.logga(search_energy = self.e_search) ##########################
+            # logging.info(f'search energy = {self.e_search}') # log the search energy
+
             eigvals, eigvecs_el, eigvecs_h, comp_dist, norm_sum_region = solver_kp.solve(
                     k=self.k,
                     which='LM',
@@ -178,11 +190,14 @@ class BandStructure:
                     eigenvalue_shift=self.eigenvalue_shift[i]
                 )
 
-            self.logger.logga(eigenvalues = eigvals*1e3)
+            # with MPI_debug = True, write debug information to file
+            debug_write(f"Eigenvalues = {eigvals * 1e3}\n") 
+
             # store current solution
             bands.append(list(eigvals))
             spinor_distribution.append(list(comp_dist))
             norm_sum_region_lst.append(list(norm_sum_region))
+
             # complete envelope function
             psi_el.append(eigvecs_el)
             psi_h.append(eigvecs_h)
@@ -416,3 +431,52 @@ class BandStructure:
         #ax.spines["left"].set_linewidth(spines_lw) 
         return fig
 
+_out_directory = None
+
+def MPI_debug_setup(valore):
+    """
+    Receive and set up the output directory for MPI debug files.
+    
+    Args:
+        valore (str): The directory path where debug files will be written.
+    """
+    global _out_directory
+    _out_directory = valore
+    os.makedirs(_out_directory, exist_ok=True)
+
+def debug_write(message, rank=None):
+    """
+    Funzione semplice per scrivere debug su file separati per ogni processo MPI.
+    
+    Args:
+        message (str): Messaggio da scrivere
+        rank (int, optional): Rank MPI (se None, viene determinato automaticamente)
+    """
+    
+    import os
+ 
+    # Import the flag from the calling script
+    try:
+        import __main__
+        MPI_debug = getattr(__main__, 'MPI_debug', False)
+    except:
+        MPI_debug = False
+    
+    if not MPI_debug:
+        return
+    
+    if rank is None:
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank()
+    
+    filename = os.path.join(_out_directory, f"MPI_debug_{rank}.txt")
+      
+    # # Aggiunge timestamp al messaggio
+    # import datetime
+    # timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    # formatted_message = f"[{timestamp}] RANK-{rank}: {message}\n"
+    
+    # Scrive su file (append mode)
+    with open(filename, 'a') as f:
+        # f.write(formatted_message)
+        f.write(message)
