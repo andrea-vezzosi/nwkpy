@@ -76,16 +76,11 @@ from nwkpy._database import params      # Comprehensive material parameter datab
 # LOCAL IMPORTS 
 # =============================================================================
 
-# Configure Python path to find local modules
-from pathlib import Path                        # Modern path handling for cross-platform compatibility
-project_root = Path(__file__).parent.parent     # Navigate to project root directory
-sys.path.insert(0, str(project_root))           # Add project root to Python search path
-
 # Import local utility functions for logging and error handling
-from utilities import *               
+from nwkpy.utilities import *
 
 # Import local configuration constants for consistent formatting
-from config import *                  
+from nwkpy.config import *
 
 # =============================================================================
 # SCRIPT PARAMETERS

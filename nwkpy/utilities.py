@@ -20,7 +20,8 @@ Functions:
 from datetime import datetime            # Date/time stamps for logs
 import logging                          # For structured log output
 import socket                           # For network debugging information
-from config import *                    # Local configuration constants
+# from config import *                    # Local configuration constants
+from nwkpy.config import *
 from mpi4py import MPI
 import sys                              # System-specific parameters and functions
 

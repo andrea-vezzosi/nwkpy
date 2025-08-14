@@ -42,12 +42,8 @@ from nwkpy import library_header
 # LOCAL IMPORTS 
 # =============================================================================
 
-from pathlib import Path
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
-
-from utilities import *
-from config import *
+from nwkpy.utilities import *
+from nwkpy.config import *
 
 # =============================================================================
 # SCRIPT PARAMETERS
