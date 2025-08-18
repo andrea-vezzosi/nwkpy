@@ -313,14 +313,14 @@ def consistency_checks():
     if not (isinstance(shape_function_kp, list) and len(shape_function_kp) == 2):
         logger.error(f"You entered shape_function_kp = {shape_function_kp}")
         raise ValueError("shape_function_kp must be a list of two values.")
-    if any(s not in SHAPE_FUNCTIONS_TYPES for s in shape_function_kp):
+    if any(s not in SHAPE_FUNCTION_TYPES for s in shape_function_kp):
         logger.error(f"You entered shape_function_kp = {shape_function_kp}")
         raise ValueError(f"shape_function_kp values must be in {SHAPE_FUNCTIONS_TYPES}.")
 
     # Check shape_function_poisson
-    if shape_function_poisson not in valid_shapes:
+    if shape_function_poisson not in SHAPE_FUNCTION_TYPES:
         logger.error(f"You entered shape_function_poisson = {shape_function_poisson}")
-        raise ValueError(f"shape_function_poisson must be in {SHAPE_FUNCTIONS_TYPES}.")
+        raise ValueError(f"shape_function_poisson must be in {SHAPE_FUNCTION_TYPES}.")
 
     # Check betamix, maxter, w0
     if not (0 < betamix < 1):
@@ -385,6 +385,15 @@ def main():
         # Display nwkpy library version and build information
         library_header()
     
+        # Perform comprehensive validation of all input parameters    
+        try:                              # Attempt parameter validation
+            consistency_checks()  
+        except ValueError as e:           # Handle validation failures gracefully
+            execution_aborted(e)          # Log error and terminate with proper cleanup
+        else:                             # Validation successful - proceed with calculation
+            logger.info("")  
+            logger.info(f'Input parameters consistency checks passed')       
+        
     # Synchronize after header display
     comm.Barrier()
     
@@ -474,12 +483,18 @@ def main():
     # MATERIAL PARAMETER DATABASE ACCESS
     # =========================================================================
         
-    # Create user-defined parameter dictionary for the materials
-    user_defined_params = {
-        material[0]: params[material[0]], 
-        material[1]: params[material[1]]
-    }
-
+    # Create user-defined material parameter dictionary for computational classes
+    # user_defined_params = {
+    #     material[0]: params[material[0]], # Core material parameters from database
+    #     material[1]: params[material[1]]  # Shell material parameters from database
+    # }
+    user_defined_params = get_parameters(material)
+    
+    # Log material parameters for each region
+    if rank == 0:
+        for m in material:
+            log_material_params(m, user_defined_params[m])
+            
     # =========================================================================
     # FINITE ELEMENT MESH INITIALIZATION
     # =========================================================================
@@ -513,11 +528,6 @@ def main():
             content = f.read()
             for line in content.splitlines():
                 logger.info(f'{DLM} {line}')
-
-    # Log detailed material parameters for documentation and verification
-    if rank == 0:
-        log_material_params(material[0], params[material[0]])  # Core material parameters
-        log_material_params(material[1], params[material[1]])  # Shell material parameters
 
     # Synchronize after mesh initialization and logging
     comm.Barrier()

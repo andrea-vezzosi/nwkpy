@@ -442,10 +442,11 @@ def generate_png_graphs_from_data():
     )
     
     # Recreate material parameter dictionary for computational classes
-    user_defined_params = {
-        material[0]: params[material[0]], 
-        material[1]: params[material[1]]
-    }
+    # user_defined_params = {
+    #     material[0]: params[material[0]], 
+    #     material[1]: params[material[1]]
+    # }
+    user_defined_params = get_parameters(material)
     
     # Reconstruct band structure object with loaded data
     bs = BandStructure(
@@ -614,7 +615,7 @@ def main():
         execution_aborted(e)          # Log error and terminate with proper cleanup
     else:                             # Validation successful - proceed with calculation
         logger.info("")  
-        logger.info(f'Input parametersconsistency checks passed')        
+        logger.info(f'Input parameters consistency checks passed')        
 
     # =========================================================================
     # MESH LOADING AND VALIDATION
@@ -659,15 +660,16 @@ def main():
     # =============================================================================
 
     # Create user-defined material parameter dictionary for computational classes
-    user_defined_params = {
-        material[0]: params[material[0]], # Core material parameters from database
-        material[1]: params[material[1]]  # Shell material parameters from database
-    }
-
-    # Log detailed material parameters for documentation and verification
-    if rank == 0 and plot_only_mode is False:
-        log_material_params(material[0], params[material[0]])  # Core material parameters
-        log_material_params(material[1], params[material[1]])  # Shell material parameters
+    # user_defined_params = {
+    #     material[0]: params[material[0]], # Core material parameters from database
+    #     material[1]: params[material[1]]  # Shell material parameters from database
+    # }
+    user_defined_params = get_parameters(material)
+    
+    # Log material parameters for each region
+    if rank == 0:
+        for m in material:
+            log_material_params(m, user_defined_params[m])
 
     # =============================================================================
     # PLOT GENERATION MODE

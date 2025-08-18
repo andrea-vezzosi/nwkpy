@@ -86,6 +86,10 @@ class BandStructure:
             self.logger = Logger(rank=0,logfile_path='./')
             
         material_list = list(self.mesh.reg2mat.values())
+        # Ensure rescaling is a dict for all materials
+        # GG 16-08-2025: aggiunto per evitare errore 'not unsubscriptable' piu' sotto
+        if rescaling is None:
+            rescaling = dict(zip(material_list, [None]*len(material_list)))
         if spherical_approximation is None:
             spherical_approximation = dict(zip(material_list, [None]*len(material_list)))
         if decouple_conduction is None:

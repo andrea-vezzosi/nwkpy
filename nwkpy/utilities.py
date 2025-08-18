@@ -25,6 +25,8 @@ from nwkpy.config import *
 from mpi4py import MPI
 import sys                              # System-specific parameters and functions
 
+from nwkpy._database import params      # Comprehensive material parameter database
+
 # Initialize module logger for consistent formatting
 logger = logging.getLogger(__name__)
 
@@ -41,7 +43,7 @@ def execution_aborted(e):
         e (Exception): The exception that caused the execution to abort
         
     Note:
-        Rerminates the program with exit code 1 after logging the error.
+        Terminates the program with exit code 1 after logging the error.
     """
     logger.error(f"{str(e)}")
     logger.error(f"Execution aborted.")
@@ -257,7 +259,16 @@ def log_computational_system_information(size,kmaxlocal,MPI_debug):
         
         
 def log_broyden_mixing_parameters(betamix, maxter, w0, use_wm, toreset):
-    """Log parameters for Broyden mixing."""
+    """
+    Log parameters for Broyden mixing.
+
+    Args:
+        betamix (float): Mixing parameter for Broyden method
+        maxter (int): Maximum number of stored iterations
+        w0 (float): Weight parameter for mixing
+        use_wm (bool): Whether to use weight matrix
+        toreset (bool): Whether to reset iterations
+    """
     logger.info("")
     logger.info("Broyden mixing parameters")
     logger.info(f'{DLM}Mixing parameter (beta)       : {betamix}')
@@ -267,8 +278,34 @@ def log_broyden_mixing_parameters(betamix, maxter, w0, use_wm, toreset):
     logger.info(f'{DLM}Reset iterations              : {toreset}')
 
 def log_self_consistent_cycle_parameters(maxiter, maxchargeerror):
-    """Log parameters for the self-consistent cycle."""
+    """
+    Log parameters for the self-consistent cycle.
+
+    Args:
+        maxiter (int): Maximum number of iterations
+        maxchargeerror (float): Convergence criterion for charge density
+    """
     logger.info("")
     logger.info("Self-consistent cycle parameters")
     logger.info(f'{DLM}Maximum iterations    : {maxiter}')
     logger.info(f'{DLM}Convergence criterion : {maxchargeerror}')
+
+def get_parameters(material):
+    """
+    Get parameters for the k.p Hamiltonian of the specified materials.
+
+    Args:
+        material (list): List of material names (e.g., ['InAs', 'GaSb'])
+
+    returns:
+        dict: Dictionary of material parameters
+    """
+    
+    # set parameters dictionary
+    parameters = {}                 
+    
+    for m in material:
+        # add key and parameters
+        parameters[m] = params[m]   
+    
+    return parameters
