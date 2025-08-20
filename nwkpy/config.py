@@ -43,19 +43,19 @@ LOG_FILE_NAME = 'logfile'                # Base name for log file (without exten
 # Valid input parameter options for error checking and user guidance
 # used by input validation functions
 
-CARRIER_TYPES = ['electron', 'hole']                 # Valid carrier types
+CARRIER_TYPES = ('electron', 'hole')                 # Valid carrier types
                                                      # Used to specify dominant carriers
                                                      # in each material region
 
-SHAPE_FUNCTION_TYPES = ['Lagrange', 'Hermite',       # Valid shape functions
-         'LagrangeHermite', 'LagrangeQuadratic']  
+SHAPE_FUNCTION_TYPES = ('Lagrange', 'Hermite', 
+            'LagrangeHermite', 'LagrangeQuadratic')  # Valid shape functions
                                                      # Finite element basis functions:
                                                      # - 'Lagrange': Standard polynomial basis
                                                      # - 'Hermite': Higher-order accuracy
                                                      # - 'LagrangeHermite': Mixed basis  
                                                      # - 'LagrangeQuadratic': Quadratic elements
 
-PRINCIPAL_AXIS_DIRECTIONS = ['100', '110', '111']   # Valid principal axis directions
+PRINCIPAL_AXIS_DIRECTIONS = ('100', '110', '111')   # Valid principal axis directions
                                                      # Crystallographic directions for
                                                      # nanowire growth axis:
                                                      # - '100': Face-centered cubic

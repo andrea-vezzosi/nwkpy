@@ -5,16 +5,19 @@ This module provides essential utility functions for logging, error handling,
 and system information display to ensure consistency and reusability across different scripts.
 
 Functions:
-    execution_aborted(e): Handle fatal errors and exit gracefully
-    execution_successful(): Log successful completion
-    host_IP(): Log hostname and IP for distributed debugging
-    print_header(script_name): Create formatted header for the script
-    log_material_params(material_name, material_params): Display material parameters
-    log_system_configuration_summary(...): Show system config in tabular form
-    log_physical_parameters(...): Display physical simulation parameters
-    log_electrostatic_potential_configuration(...): Show Poisson equation setup
-    log_band_structure_calculation_parameters(...): Display k-point and eigenvalue settings
-    log_computational_system_information(...): Show MPI and debugging configuration
+    execution_aborted: Handle fatal errors and exit gracefully
+    execution_successful: Log successful completion
+    host_IP: Log hostname and IP for distributed debugging
+    print_header: Create formatted header for the script
+    log_material_params: Display material parameters
+    log_system_configuration_summary: Show system config in tabular form
+    log_physical_parameters: Display physical simulation parameters
+    log_electrostatic_potential_configuration: Show Poisson equation setup
+    log_band_structure_calculation_parameters: Display k-point and eigenvalue settings
+    log_computational_system_information: Show MPI and debugging configuration
+    log_broyden_mixing_parameters: Log parameters for Broyden mixing.
+    log_self_consistent_cycle_parameters: Log parameters for the self-consistent cycle.
+    get_parameters: Get parameters for the k.p Hamiltonian of the specified materials.
 """
 
 from datetime import datetime            # Date/time stamps for logs
