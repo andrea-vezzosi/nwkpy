@@ -1,21 +1,37 @@
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
 [project]
 name = "nwkpy"
-version = "0.0.1"
+version = "0.1.0"
 authors = [
   { name="Andrea Vezzosi", email="andrea.vezzosi@unimore.it" },
 ]
-description = "kp band structure of semiconductor nanowires"
+description = "k.p band structure of semiconductor nanowires"
 readme = "README.md"
 requires-python = ">=3.7"
+# Rimuovo il classifier deprecato della licenza
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+# Sintassi SPDX per la licenza
+license = {text = "MIT"}
 
 [project.urls]
 "Homepage" = "https://github.com/pypa/sampleproject"
 "Bug Tracker" = "https://github.com/pypa/sampleproject/issues"
+
+[tool.setuptools.packages.find]
+include = ["nwkpy*"]  # Include solo nwkpy e i suoi subpackages
+exclude = ["service*"]  # Escludi esplicitamente service
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+branch = "main"
+changelog_file = "CHANGELOG.md"
+build_command = "pip install build && python -m build"
+upload_to_pypi = false
+upload_to_release = true
+hvcs = "github"
