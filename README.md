@@ -4,17 +4,17 @@
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-latest-brightgreen)](docs/)
 
-**nwkp<sub>y</sub>** is a numerical library for calculating electronic band structures of semiconductor nanowires using the 8-band k·p Hamiltonian with real-space discretization using FEM. It supports radial material modulation and doping within the self-consistent coupled Schrödinger-Poisson problem. Inhomogenous grids and advanced numerical techniques ensure computational optimization and accuracy.
+**nwkp<sub>y</sub>** is a numerical library for calculating electronic band structures of semiconductor nanowires using the 8-band k·p Hamiltonian with real-space discretization using FEM. It supports radial material modulation and doping with a self-consistent coupled Schrödinger-Poisson problem. Inhomogenous grids and advanced numerical techniques ensure computational optimization and accuracy.
 
-**nwkp<sub>y</sub>** is a Object Oriented library written in Python. Its classes and functions allow to write flexible, numerically efficient scrpits to calculate the band structure of nanowires with different composition, dopint, gemotry, growth axes. The library is equipped with ready-to-use, fully documented scripts for homogeneous and core-single-shell exagonal nanowires covering most common nanowire classes.
+**nwkp<sub>y</sub>** is a object oriented library written in Python. Its classes and functions allow to write flexible, numerically efficient scrpits to calculate the band structure of nanowires with different composition, doping, geometry, growth axes, etc. The library is equipped with ready-to-use, fully documented scripts for homogeneous and core-single-shell exagonal nanowires, covering most common nanowire classes.
 
 ## Key Features
 
 - **8-band k·p Hamiltonian**: Complete treatment of conduction and valence bands including spin-orbit coupling
 - **Finite Element Method (FEM)**: Flexible spatial discretization with FreeFem++ integration
+- **Spurioous solution suppression**: Burt-Foreman boumdary conditions and shape-fuctions choice
 - **Core-Shell Nanowires**: Specialized support for hexagonal cross-section heterostructures  
 - **Self-Consistent Coupling**: Schrödinger-Poisson equations with Broyden mixing for rapid convergence
-- **Advanced Numerics**: Spurious solution suppression
 - **Modified Envelope Function Approximation (MEFA)**: Self-consistent approach for broken-gap alignements
 - **High Performance**: MPI parallelization, optimized sparse matrix solvers, inhomogeneous mesh support
 - **Comprehensive Analysis**: Band structure visualization, charge density plots, electrostatic potential mapping
@@ -24,6 +24,7 @@
 **nwkp<sub>y</sub>** implements state-of-the-art methods for semiconductor nanostructure calculations:
 
 - **k·p Theory**: 8-band Kane model with P-parameter rescaling to eliminate spurious solutions
+- **Crystal symmetry**: WZ/ZB Hamiltonian, abritrary growth direction
 - **Heterostructure Physics**: Type I/II band alignments, broken-gap structures, carrier localization
 - **Electrostatics**: Self-consistent treatment of built-in fields, external electric fields, charge redistribution
 - **Material Systems**: Comprehensive database of III-V semiconductors (InAs, GaAs, GaSb, InP, etc.)
@@ -74,22 +75,17 @@ cd nwkpy
 pip install -e .
 ```
 
-### Use scripts for homogeneous or core-shell hexagonal nanowires
+### Use ready-to-run scripts
 
-**nwkp<sub>y</sub>** comes with ready-to-use scripts to performe band-structure calculations for the very common case of hexagonal section a core-shell nanowire. 
-
-There are three scripts with common behaviours:
-- **input file:** indata.py
-- **script name:** main.py
-- **output data directory:** chosen as an input
-- **mesh files:** must be in the script directory
+The easiest way to use **nwkp<sub>y</sub>** is to run the scripts in nwkpy/scripts. 
+**nwkp<sub>y</sub>** comes with ready-to-run scripts and ready-made inputs to performe band-structure calculations for the very common case of hexagonal core-shell nanowire. These will sufficies for most cases. 
 
 Workflow:
 
 #### 1. Generate finite element mesh
 
 ```bash
-cd scripts/mesh_generation/
+cd nwkpy/scripts/mesh_generation/
 
 # Choose material, width and grid densities in the core and shell regions
 edit indata.py
@@ -97,9 +93,9 @@ edit indata.py
 # Generate mesh files
 python main.py
 ```
-#### 2. Calculate band structure (single field, non-self-consistent) 
+#### 2. Calculate band structure (non-self-consistent) 
 ```bash
-cd scritps/band_structure
+cd nwkpy/scritps/band_structure
 
 # Copy the generated mesh (the exact location is set in scripts/mesh_generation/indata.py)
 cp ../mesh_generation/outdata/mesh.* .
@@ -113,7 +109,7 @@ python main.py
 #### 2. (alternatively) Self-consistent calculation with electric field and chemical potential sweeps
 
 ```bash
-cd scripts/self_consistent_multi_point
+cd nwkpy/scripts/self_consistent_multi_point
 
 # Copy the generated mesh (the exact location is set in scripts/mesh_generation/indata.py)
 cp ../mesh_generation/outdata/mesh.* .
@@ -128,16 +124,13 @@ python main.py
 #### 3. (optional) Generate publicaiton-quality plots
 ```bash
 # Use scripts/band_structure/main.py in plot_only_mode
-cd scritps/band_structure
+cd nwkpy/scritps/band_structure
 
 # Copy .npy files from a previous calculation (either from the band_structure or the self_consistten_single_point scripts)
 cp <directoyry>/*.npy ./oudata/
 
-# edit indata.py and tailor plotting preferences at your needs
+# edit indata.py and set
 plot_only_mode = True
-plotting_preferencies_bands = { <parameters> }
-plotting_preferencies_potential = { <parameters> }
-plotting_preferencies_density = { <parameters> }
 
 # produce *.png graphs
 python main.py
