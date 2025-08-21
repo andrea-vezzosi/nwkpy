@@ -94,6 +94,7 @@ SCRIPT_NAME = 'Core-Shell Nanowire band structure calculation'
 # =============================================================================
 
 # Import all simulation parameters from the input configuration file
+indata = INPUT_FILE_NAME+'.py'
 from indata import *                   
 
 # Execution control logic based on user-specified flags
@@ -166,10 +167,13 @@ except FileNotFoundError as f:
 # INPUTS CONSISTENCY CHECKS
 # =============================================================================
 
-def consistency_checks():
+def consistency_checks(indata):
     """
     Perform comprehensive consistency checks on input parameters.
-        
+
+    Args:
+        indata: The input data module containing all parameters.
+
     Raises:
         ValueError: If any parameter is invalid, inconsistent, or out of range
         
@@ -177,6 +181,10 @@ def consistency_checks():
         This function only validates parameter values, not file existence.
         File checks are performed separately in the main execution flow.
     """
+
+    # log input file
+    logger.info("")
+    logger.info(f"Input read from file {indata}")
 
     # Check if all specified materials exist in the nwkpy parameter database
     if any(m not in params for m in material):
@@ -238,23 +246,33 @@ def consistency_checks():
         logger.warning(f"The number of k points should be at least 1")
         raise ValueError("Number of k-points must be at least 1")
 
-# =============================================================================
+# =========================================================================
 # PHYSICAL SYSTEM CONFIGURATION
-# =============================================================================
+# =========================================================================
 
+reg2mat = {}
+valence_band_edges = {}
+rescaling = {}
+mat2partic = {}
+
+# iterate over the materials
+for i, m in enumerate(material):
+    
 # Define material assignment mapping from mesh regions to materials
-reg2mat = {
-    1: material[0],                    # Region 1 (typically inner core) → first material
-    2: material[1]                     # Region 2 (typically outer shell) → second material
-}
+# reg2mat = {
+#     1: material[0],                    # Region 1 (typically inner core) → first material
+#     2: material[1]                     # Region 2 (typically outer shell) → second material
+# }
+    reg2mat[i+1] = m
 
 # Define valence band edge alignment for heterostructure band offsets
 # These values set the energy reference level for each material, determining
 # whether the heterostructure has Type I (nested) or Type II (staggered) alignment
-valence_band_edges = {
-    material[0]: valence_band[0],      # Core material valence band edge (eV)
-    material[1]: valence_band[1]       # Shell material valence band edge (eV)
-}
+# valence_band_edges = {
+#     material[0]: valence_band[0],      # Core material valence band edge (eV)
+#     material[1]: valence_band[1]       # Shell material valence band edge (eV)
+# }
+    valence_band_edges[m] = valence_band[i]
 
 # Configure P-parameter rescaling for spurious solution suppression
 # The 8-band k·p model can produce unphysical high-energy solutions
@@ -263,17 +281,19 @@ valence_band_edges = {
 # - 'S=0': Use standard Ep evaluation according to Eq. 6.158
 # - 'S=1': Use modified Ep evaluation according to Eq. 6.159
 # - Numerical value: Apply fractional reduction of Ep (e.g., 0.26 = 26% reduction)
-rescaling = {
-    material[0]: rescale[0],           # Core material rescaling method
-    material[1]: rescale[1]            # Shell material rescaling method
-}
+# rescaling = {
+#     material[0]: rescale[0],           # Core material rescaling method
+#     material[1]: rescale[1]            # Shell material rescaling method
+# }
+    rescaling[m] = rescale[i]
 
 # Define dominant carrier types for each material region
 # This is particularly important for broken-gap heterostructures 
-mat2partic = {
-    material[0]: carrier[0],           # Core material dominant carrier type
-    material[1]: carrier[1]            # Shell material dominant carrier type
-}
+# mat2partic = {
+#     material[0]: carrier[0],           # Core material dominant carrier type
+#     material[1]: carrier[1]            # Shell material dominant carrier type
+# }
+    mat2partic[m] = carrier[i]
 
 # =============================================================================
 # K-SPACE SAMPLING CONFIGURATION
@@ -610,7 +630,7 @@ def main():
 
     # Perform comprehensive validation of all input parameters    
     try:                              # Attempt parameter validation
-        consistency_checks()  
+        consistency_checks(indata)  
     except ValueError as e:           # Handle validation failures gracefully
         execution_aborted(e)          # Log error and terminate with proper cleanup
     else:                             # Validation successful - proceed with calculation

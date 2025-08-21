@@ -80,6 +80,7 @@ SCRIPT_NAME = 'Self-consistent Schrödinger-Poisson band structure calculation'
 # =============================================================================
 
 # Import all simulation parameters from the input configuration file
+indata = INPUT_FILE_NAME+'.py'
 from indata import *                   
 
 # =============================================================================
@@ -200,12 +201,21 @@ def get_density_resid(rho1_el, rho1_h, rho2_el, rho2_h):
 
     return n_resid, p_resid
 
-def consistency_checks():
+def consistency_checks(indata):
     """
     Perform comprehensive consistency checks on input parameters from indata_updated.py.
+
+    Args:
+        indata: The input data module containing all parameters.
+        
     Raises:
         ValueError: If any parameter is invalid, inconsistent, or out of range.
     """
+
+    # log input file
+    logger.info("")
+    logger.info(f"Input read from file {indata}")
+
     # Check output directory and mesh name
     if not isinstance(directory_name, str) or not directory_name:
         logger.error(f"You entered directory_name = {directory_name}")
@@ -385,9 +395,9 @@ def main():
         # Display nwkpy library version and build information
         library_header()
     
-        # Perform comprehensive validation of all input parameters    
+        # Perform comprehensive validation of all input parameters
         try:                              # Attempt parameter validation
-            consistency_checks()  
+            consistency_checks(indata)  
         except ValueError as e:           # Handle validation failures gracefully
             execution_aborted(e)          # Log error and terminate with proper cleanup
         else:                             # Validation successful - proceed with calculation
@@ -401,40 +411,50 @@ def main():
     # PHYSICAL SYSTEM CONFIGURATION
     # =========================================================================
     
-    # Map finite element mesh regions to physical materials
-    # Typically: Region 1 = core, Region 2 = shell for core-shell nanowires
-    reg2mat = {
-        1: material[0],    # Core region gets first material 
-        2: material[1]     # Shell region gets second material 
-    }
+    reg2mat = {}
+    valence_band_edges = {}
+    rescaling = {}
+    mat2partic = {}
 
-    # Define valence band edge offsets for proper band alignment
-    # These values set the energy reference for each material in eV
-    # Critical for correct band lineup in heterostructures
-    valence_band_edges = {
-        material[0]: valence_band[0],    # Core material VB edge
-        material[1]: valence_band[1]     # Shell material VB edge
-    }
+    # iterate over the materials
+    for i, m in enumerate(material):
+        
+    # Define material assignment mapping from mesh regions to materials
+    # reg2mat = {
+    #     1: material[0],                    # Region 1 (typically inner core) → first material
+    #     2: material[1]                     # Region 2 (typically outer shell) → second material
+    # }
+        reg2mat[i+1] = m
 
-    # Spurious solution suppression parameters for 8-band k·p model
-    # The P parameter rescaling is required to avoid unphysical solutions
-    # See: B. A. Foreman, Elimination of spurious solutions from eight-band k·p theory,
-    # Phys. Rev. B 56, R12748 (1997)
-    #
-    # Options for rescaling parameter:
-    # - 'S=0': Use Eq. 6.158 from Birner's reference
-    # - 'S=1': Use Eq. 6.159 from Birner's reference  
-    # - Numerical value: Fraction to reduce Ep by (e.g., 0.26 = 26% reduction)
-    rescaling = {
-        material[0]: rescale[0],
-        material[1]: rescale[1]
-    }
+    # Define valence band edge alignment for heterostructure band offsets
+    # These values set the energy reference level for each material, determining
+    # whether the heterostructure has Type I (nested) or Type II (staggered) alignment
+    # valence_band_edges = {
+    #     material[0]: valence_band[0],      # Core material valence band edge (eV)
+    #     material[1]: valence_band[1]       # Shell material valence band edge (eV)
+    # }
+        valence_band_edges[m] = valence_band[i]
 
-    # Material-to-carrier type mapping (legacy parameter, may be unused)
-    mat2partic = {
-        material[0]: carrier[0],    # Core material carrier type
-        material[1]: carrier[1]     # Shell material carrier type
-    }
+    # Configure P-parameter rescaling for spurious solution suppression
+    # The 8-band k·p model can produce unphysical high-energy solutions
+    # Reference: B. A. Foreman, Phys. Rev. B 56, R12748 (1997)
+    # Available rescaling methods (from S. Birner thesis):
+    # - 'S=0': Use standard Ep evaluation according to Eq. 6.158
+    # - 'S=1': Use modified Ep evaluation according to Eq. 6.159
+    # - Numerical value: Apply fractional reduction of Ep (e.g., 0.26 = 26% reduction)
+    # rescaling = {
+    #     material[0]: rescale[0],           # Core material rescaling method
+    #     material[1]: rescale[1]            # Shell material rescaling method
+    # }
+        rescaling[m] = rescale[i]
+
+    # Define dominant carrier types for each material region
+    # This is particularly important for broken-gap heterostructures 
+    # mat2partic = {
+    #     material[0]: carrier[0],           # Core material dominant carrier type
+    #     material[1]: carrier[1]            # Shell material dominant carrier type
+    # }
+        mat2partic[m] = carrier[i]
 
     # =========================================================================
     # K-SPACE SAMPLING CONFIGURATION

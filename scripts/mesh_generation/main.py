@@ -55,6 +55,7 @@ SCRIPT_NAME = 'Hexagonal Core-Shell Nanowire Mesh Generation'
 # IMPORT INPUT PARAMETERS
 # =============================================================================
 
+indata = INPUT_FILE_NAME+'.py'
 from indata import *
 
 # =============================================================================
@@ -95,10 +96,18 @@ mesh_data = os.path.join(outdata_path, dat)
 # INPUTS CONSISTENCY CHECKS
 # =============================================================================
 
-def consistency_checks():
+def consistency_checks(indata):
     """
     Perform comprehensive consistency checks on input parameters.
+
+    Args:
+        indata: The input data module containing all parameters.
     """
+    
+    # log input file
+    logger.info("")
+    logger.info(f"Input read from file {indata}")
+
     # Check materials
     if len(material) != 2:
         logger.warning(f"material = {material} should contain exactly 2 materials")
@@ -134,10 +143,11 @@ def main():
     # =============================================================================
 
     print_header(SCRIPT_NAME)   # log header with date
+    
     library_header()            # log library info
 
     try:
-        consistency_checks()    # perform input consistency checks
+        consistency_checks(indata)    # perform input consistency checks
     except ValueError as e:
         execution_aborted(e)    # abort execution on input error
     else:

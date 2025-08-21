@@ -32,10 +32,14 @@ FMT_STR = "   {:<30} : {}"               # Log message formatting template with 
                                          # placeholders, 1st 30 char, left justified
                                          # Format: "   Parameter Name           : Value"
 
-LOG_FILE_NAME = 'logfile'                # Base name for log file (without extension)   
+LOG_FILE_NAME = 'logfile'                # Base name for log file (.log extension automatically added)   
                                          # Full log file will be: logfile.log
                                          # Located in the output directory set by indata
 
+INPUT_FILE_NAME = "indata"               # Base name for input file (.py extension automatically added)
+                                         # Full input file will be: indata.py
+                                         # Located in the same directory as the script
+                                         
 # =============================================================================
 # VALIDATION CONSTANTS
 # =============================================================================
