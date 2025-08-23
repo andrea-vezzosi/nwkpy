@@ -133,7 +133,8 @@ def log_material_params(material_name, material_params):
     # Log material name with spacing for readability
     logging.info("")
     logging.info(f'Material : {material_name}')
-    
+    logging.info(f'Note     : {material_params.get("note", "")}')
+
     # Format each line of parameters with consistent spacing
     line1_items = [f"{key}={value}".ljust(cell_width) 
                    for key, value in material_params.items() if key in line1_params]
@@ -293,7 +294,7 @@ def log_self_consistent_cycle_parameters(maxiter, maxchargeerror):
     logger.info(f'{DLM}Maximum iterations    : {maxiter}')
     logger.info(f'{DLM}Convergence criterion : {maxchargeerror}')
 
-def get_parameters(material):
+def get_parameters(material, user_params=None):
     """
     Get parameters for the k.p Hamiltonian of the specified materials.
 
@@ -303,12 +304,22 @@ def get_parameters(material):
     returns:
         dict: Dictionary of material parameters
     """
-    
+
     # set parameters dictionary
     parameters = {}                 
-    
+
+    # # set parameters from user input (priority)
+    # if user_params is not None:
+    #     for m in material:
+    #         parameters[m] = user_params[m]
+    # # set parameters from internal database
+    # else:
+    #     for m in material:
+    #         parameters[m] = params[m]   
+
     for m in material:
-        # add key and parameters
-        parameters[m] = params[m]   
-    
+        if user_params is not None and m in user_params:
+            parameters[m] = user_params[m]
+        else:
+            parameters[m] = params[m]
     return parameters

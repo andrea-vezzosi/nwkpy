@@ -47,11 +47,12 @@ plot_only_mode = False             # If True, only generate plots from existing 
                                    # Useful for adjusting plot parameters or formats
                                    # Use with same input parameters used for the calculations.
 
-generate_png_graphs = True             # If True, generate plots after the calculations
-
 # Data output control
 generate_txt_files = False         # If True, save results in human readable format (.txt)
                                   # in addition to binary format (.npy) for some files
+
+generate_png_graphs = True             # If True, generate plots after the calculations
+                                    
 
 # Debugging and development options
 MPI_debug = False                 # If True, enable MPI debugging output
@@ -70,6 +71,11 @@ material = ["InAs", "GaSb"]       # Materials for [core, shell] of the nanowire
 valence_band = [0.0, 0.56]        # Valence band edge offsets in eV for [core, shell]
                                   # Sets the energy reference for each material
                                   # Difference determines band offset (Type I/II alignment)
+
+user_parameters_file = None       # file with user-defined parameters (if any)
+                                  # e.g. user_parameters_file = "user_parameters.dict"  
+                                  # Keys should match those in material list
+                                  # If None, internal database is used
 
 # =====================
 # CRYSTAL STRUCTURE

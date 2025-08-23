@@ -20,8 +20,9 @@ params = {
             'alc' : 6.0583, # A at T=300 K
             'alpha' : 2.76 * 1e-4, # eV ...
             'alcTpar': 2.74 * 1e-5, # A/K
-            'beta' : 93 # K
-            },
+            'beta' : 93, # K
+            'note' : 'Ref. I Vurgaftman, J R Meyer, L R Ram-Mohan, J. App. Phys. 89, 5815 (2001)'
+    },
     'InAsP0' :{
             'Eg' : 0.417,
             'delta' : 0.39 ,
@@ -42,8 +43,9 @@ params = {
             'alc' : 6.0583, # A at T=300 K
             'alpha' : 2.76 * 1e-4, # eV ...
             'alcTpar': 2.74 * 1e-5, # A/K
-            'beta' : 93 # K
-            },
+            'beta' : 93, # K
+            'note' : 'Ref. I Vurgaftman, J R Meyer, L R Ram-Mohan, J. App. Phys. 89, 5815 (2001)'
+    },
     'AlGaAs' :{
             'Eg' : 1.936,
             'delta' : 0.323,
@@ -64,8 +66,9 @@ params = {
             'alc' : 5.6, # A, uncorrect
             'alcTpar': 2.60 * 1e-5, # A/K uncorrect
             'alpha': 4.60 * 1e-4, # uncorrect
-            'beta' : 204 # uncorrect
-            },
+            'beta' : 204, # uncorrect
+            'note' : 'Ref. I Vurgaftman, J R Meyer, L R Ram-Mohan, J. App. Phys. 89, 5815 (2001)'
+    },
     'GaAs' :{
             'Eg' : 1.518,
             'delta' : 0.341,
@@ -86,8 +89,9 @@ params = {
             'alc' : 5.6, # A,
             'alcTpar': 2.60 * 1e-5, # A/K uncorrect
             'alpha': 4.60 * 1e-4,
-            'beta' : 204
-            },
+            'beta' : 204,
+            'note' : 'Ref. I Vurgaftman, J R Meyer, L R Ram-Mohan, J. App. Phys. 89, 5815 (2001)'
+    },
     'GaSb' :{
             'Eg' : 0.812,
             'delta' : 0.76,
@@ -108,8 +112,9 @@ params = {
             'alc': 6.0959, #A at T=300K
             'alcTpar': 4.72 * 1e-5, # A/K
             'alpha' : 4.14 * 1e-4,
-            'beta' : 140
-            },
+            'beta' : 140,
+            'note' : 'Ref. I Vurgaftman, J R Meyer, L R Ram-Mohan, J. App. Phys. 89, 5815 (2001)'
+    },
     'GaSbP0' :{
             'Eg' : 0.812,
             'delta' : 0.76,
@@ -130,8 +135,9 @@ params = {
             'alc': 6.0959, #A at T=300K
             'alcTpar': 4.72 * 1e-5, # A/K
             'alpha' : 4.14 * 1e-4,
-            'beta' : 140
-            },    
+            'beta' : 140,
+            'note' : 'Ref. I Vurgaftman, J R Meyer, L R Ram-Mohan, J. App. Phys. 89, 5815 (2001)'
+    },    
     'InSb' :{
             'Eg' : 0.235,
             'delta' : 0.81,
@@ -147,8 +153,9 @@ params = {
             'N'  : 0.0,
             'P' : 0.0,
             'Ac' : 0.0,
-            'B' : 0.0
-            },
+            'B' : 0.0,
+            'note' : 'Ref. I Vurgaftman, J R Meyer, L R Ram-Mohan, J. App. Phys. 89, 5815 (2001)'
+    },
     'InP' :{
             'Eg' : 1.4236,
             'delta' : 0.108,
@@ -164,8 +171,9 @@ params = {
             'N'  : 0.0,
             'P' : 0.0,
             'Ac' : 0.0,
-            'B' : 0.0
-            },
+            'B' : 0.0,
+            'note' : 'Ref. I Vurgaftman, J R Meyer, L R Ram-Mohan, J. App. Phys. 89, 5815 (2001)'
+    },
     'AlSb' :{
             'Eg' : 2.368,
             'delta' : 0.676,
@@ -186,8 +194,9 @@ params = {
             'alc': 6.1355, #A at T=300K
             'alcTpar': 2.60 * 1e-5, # A/K
             'alpha' : 4.2 * 1e-4,
-            'beta' : 140
-            }
+            'beta' : 140,
+            'note' : 'Ref. I Vurgaftman, J R Meyer, L R Ram-Mohan, J. App. Phys. 89, 5815 (2001)'
+    }
 }
 
 #params = {

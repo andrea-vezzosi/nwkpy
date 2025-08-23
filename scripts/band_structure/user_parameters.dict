@@ -1,0 +1,63 @@
+# Band Parameters Configuration File
+# 
+# This file defines band parameters in dictionary format to extend the use of the script to 
+# atomic species and alloys not already included in the nwkpy library's _database file, or 
+# to use modified values of the band parameters. 
+#
+# The dictionaries below serve as templates, actually replicating existing library materials
+# with different labels for testing purposes. Modify the parameters according to 
+# your specific material requirements.
+#
+# Usage:
+#   - Add new materials by creating additional dictionaries following the same structure
+#   - Ensure parameter keys match those expected by the nwkpy library
+#   - Validate units and values against literature or experimental data
+
+{
+    'InAs+' :{
+            'note' : 'user specified parameters',
+            'Eg' : 0.417,
+            'delta' : 0.39 ,
+            'Ep' : 21.5 ,
+            'me' : 0.026,
+            'lu1' : 20.0,
+            'lu2' : 8.5,
+            'lu3' : 9.2,
+            'L'  : 0.0,
+            'M'  : 0.0,
+            'Nm' : 0.0,
+            'Np' : 0.0,
+            'N'  : 0.0,
+            'P' : 0.0,
+            'Ac' : 0.0,
+            'B' : 0.0,
+            'eps' : 15.5,
+            'alc' : 6.0583, # A at T=300 K
+            'alpha' : 2.76 * 1e-4, # eV ...
+            'alcTpar': 2.74 * 1e-5, # A/K
+            'beta' : 93 # K
+            },
+    'GaSb+' :{
+            'note' : 'user specified parameters',
+        'Eg' : 0.812,
+        'delta' : 0.76,
+        'Ep' : 27.0,
+        'me' : 0.039,
+        'lu1' : 13.4,
+        'lu2' : 4.7,
+        'lu3' : 6.0,
+        'L'  : 0.0,
+        'M'  : 0.0,
+        'Nm' : 0.0,
+        'Np' : 0.0,
+        'N'  : 0.0,
+        'P' : 0.0,
+        'Ac' : 0.0,
+        'B' : 0.0,
+        'eps': 15.7,
+        'alc': 6.0959, #A at T=300K
+        'alcTpar': 4.72 * 1e-5, # A/K
+        'alpha' : 4.14 * 1e-4,
+        'beta' : 140
+        }
+}

@@ -49,11 +49,11 @@ mesh_name = "mesh"                # Base name of the mesh file to be generated
 # =====================
 
 # Data output control
-generate_txt_files = False         # If True, save results in human readable format (.txt)
+generate_txt_files = False        # If True, save results in human readable format (.txt)
                                   # in addition to binary format (.npy) for some files
+                                  # *at each iteration*
 
-generate_png_graphs = False        # If True, generate plots in .png format
-                                  # Plots will be saved in the output directory
+generate_png_graphs = False       # If True, generate plots in .png format *at each iteration*
 
 # Debugging and development options
 MPI_debug = False                 # If True, enable MPI debugging output
@@ -72,6 +72,11 @@ material = ["InAs", "GaSb"]       # Materials for [core, shell] of the nanowire
 valence_band = [0.0, 0.56]        # Valence band edge offsets in eV for [core, shell]
                                   # Sets the energy reference for each material
                                   # Difference determines band offset (Type I/II alignment)
+
+user_parameters_file = None       # file with user-defined parameters (if any)
+                                  # e.g. user_parameters_file = "user_parameters.dict"  
+                                  # Keys should match those in material list
+                                  # If None, internal database is used
 
 # =====================
 # CRYSTAL STRUCTURE

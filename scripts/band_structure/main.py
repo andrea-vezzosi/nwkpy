@@ -67,7 +67,7 @@ from nwkpy import FreeChargeDensity     # Free carrier density calculator with F
 from nwkpy import ElectrostaticPotential # Potential field container and manipulation
 from nwkpy import DopingChargeDensity   # Doping charge density (not used in this intrinsic case)
 from nwkpy import _constants            # Physical constants (fundamental and material-specific)
-from nwkpy import debug_write, MPI_debug_setup  # MPI debugging utilities for parallel development
+from nwkpy import MPI_debug_setup  # MPI debugging utilities for parallel development
 
 # Material parameter database access
 from nwkpy._database import params      # Comprehensive material parameter database
@@ -95,7 +95,10 @@ SCRIPT_NAME = 'Core-Shell Nanowire band structure calculation'
 
 # Import all simulation parameters from the input configuration file
 indata = INPUT_FILE_NAME+'.py'
-from indata import *                   
+if not os.path.exists(indata):  
+    execution_aborted(f"Input file '{indata}' not found")  # Graceful termination with error logging
+else:
+    from indata import *
 
 # Execution control logic based on user-specified flags
 # Determines whether to run calculations or only generate plots from existing data
@@ -107,25 +110,15 @@ run_calculation = True if not plot_only_mode else False
  
 # Construct file system paths for output data storage
 cdir = os.getcwd()                     # Current working directory (script location)
-outdata_path = os.path.join(cdir, directory_name, '')  # Output directory with trailing separator
+
+# Construct output data directory path
+outdata_path = os.path.join(cdir, directory_name)
 
 # Construct full path to log file for structured output
 log_file = os.path.join(outdata_path, LOG_FILE_NAME + ".log")
 
 # Creates the directory tree if it doesn't exist, no error if it already exists
 os.makedirs(outdata_path, exist_ok=True)
-
-if MPI_debug:                               # to all ranks!
-    MPI_debug_setup(outdata_path+'/DEBUG')  # create DEBUG directory
-
-# =============================================================================
-# MPI SETUP AND PROCESS INITIALIZATION
-# =============================================================================
-
-# Initialize MPI communicator for parallel k-point calculations
-comm = MPI.COMM_WORLD                  # Global communicator including all MPI processes
-rank = comm.Get_rank()                 # Process rank (0 to size-1), 0 is the master process
-size = comm.Get_size()                 # Total number of MPI processes in the calculation
 
 # =============================================================================
 # CONFIGURE LOGGING SYSTEM
@@ -143,8 +136,21 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)   # Get logger instance for this module
 
 # Display log file location on stdout for user reference
-if rank == 0:
-    print(f'\nAll log messages sent to file: {log_file}\n')
+print(f'\nAll log messages sent to file: {log_file}\n')
+    
+# =============================================================================
+# USER PARAMETERS
+# =============================================================================
+
+# Read band parameters provided by the user, if any
+if user_parameters_file is not None:
+    try:
+        with open(user_parameters_file, 'r') as f:
+            user_params = eval(f.read())
+    except FileNotFoundError:
+        execution_aborted(f"User parameters file '{user_parameters_file}' not found.")
+else:
+    user_params = None
 
 # =============================================================================
 # MESH FILES
@@ -162,7 +168,19 @@ try:
         raise FileNotFoundError(f"Mesh data file '{mesh_data}' not found")
 except FileNotFoundError as f:
     execution_aborted(f)               # Graceful termination with error logging
+
+# =============================================================================
+# MPI SETUP AND PROCESS INITIALIZATION
+# =============================================================================
+
+# Initialize MPI communicator for parallel k-point calculations
+comm = MPI.COMM_WORLD                  # Global communicator including all MPI processes
+rank = comm.Get_rank()                 # Process rank (0 to size-1), 0 is the master process
+size = comm.Get_size()                 # Total number of MPI processes in the calculation
         
+# Synchronize all processes after logging setup
+comm.Barrier()
+
 # =============================================================================
 # INPUTS CONSISTENCY CHECKS
 # =============================================================================
@@ -187,9 +205,11 @@ def consistency_checks(indata):
     logger.info(f"Input read from file {indata}")
 
     # Check if all specified materials exist in the nwkpy parameter database
-    if any(m not in params for m in material):
-        logger.warning(f"material = {material} in not in the parameter database")
-        logger.warning(f"Available materials: {list(params.keys())}")
+    if any(m not in params and m not in user_params for m in material):
+        logger.warning(f"material = {material} in not in the database or user parameters")
+        logger.warning(f"Available materials in database : {list(params.keys())}")
+        if not(user_params is None):
+            logger.warning(f"Available materials in user parameters: {list(user_params.keys())}")
         raise ValueError("Invalid material - Choose available materials or update the parameter database")
 
     # Validate crystallographic growth direction specification
@@ -366,24 +386,25 @@ def plot_production(bs,p,rho_el,rho_h):
 
     logger.info("")
     logger.info('Generating plots')
+    print('output directory:', outdata_path)
     
     # Generate band structure dispersion plot showing E(k) relationships
     # Displays energy bands vs k-space with color-coded carrier character
-    figure_file = outdata_path + 'energy_bands.png'
+    figure_file = os.path.join(outdata_path, 'energy_bands.png')
     figure_bands = bs.plot_bands(**plotting_preferencies_bands)
     figure_bands.savefig(figure_file, bbox_inches="tight")
     logger.info(FMT_STR.format('Band structure plot', f'{directory_name}/energy_bands.png'))
     
     # Generate 2D charge density contour plot in the nanowire cross-section
     # Shows spatial distribution of free carriers with material interface overlay
-    figure_file = outdata_path + 'carrier_density.png'
+    figure_file = os.path.join(outdata_path, 'carrier_density.png')
     figure_density = bs.plot_density(rho_el, rho_h, **plotting_preferencies_density)
     figure_density.savefig(figure_file, bbox_inches="tight")
     logger.info(FMT_STR.format('Charge density plot', f'{directory_name}/carrier_density.png'))
     
     # Generate electrostatic potential contour plot showing built-in fields
     # Displays potential landscape created by charge redistribution and external fields
-    figure_file = outdata_path + 'potential.png'
+    figure_file = os.path.join(outdata_path, 'potential.png')
     figure_potential = p.epot.plot(**plotting_preferencies_potential)
     figure_potential.savefig(figure_file, bbox_inches="tight")
     logger.info(FMT_STR.format('Electrostatic potential plot', f'{directory_name}/potential.png'))
@@ -428,24 +449,25 @@ def generate_png_graphs_from_data():
     # Check for existence of all required data files
     missing_files = []
     for file in required_files:
-        if not os.path.exists(outdata_path + file):
+        file_name = os.path.join(outdata_path, file)
+        if not os.path.exists(file_name):
             missing_files.append(file)
     
     # Abort plot generation if any required files are missing
     if missing_files:
         logger.error(f'Missing data files {missing_files} in {directory_name}')
         logger.error('Cannot generate plots without complete data set')
-        sys.exit(1)  # Exit with error code to indicate failure
-    
+        execution_aborted('Missing data files')
+
     # Load all saved numerical results from binary NumPy files
     # These files contain the complete state of a finished calculation
     try:
-        bands = np.load(outdata_path + 'bands.npy')                    # Energy eigenvalues
-        spinor_dist = np.load(outdata_path + 'spinor_dist.npy')        # Spinor characters
-        norm_sum_region = np.load(outdata_path + 'norm_sum_region.npy') # Regional normalizations
-        envelope_el = np.load(outdata_path + 'envelope_el.npy')        # Electron envelopes
-        envelope_h = np.load(outdata_path + 'envelope_h.npy')          # Hole envelopes
-        kzvals = np.load(outdata_path + 'kzvals.npy')                  # k-point values
+        bands = np.load(os.path.join(outdata_path,'bands.npy'))                    # Energy eigenvalues
+        spinor_dist = np.load(os.path.join(outdata_path,'spinor_dist.npy'))        # Spinor characters
+        norm_sum_region = np.load(os.path.join(outdata_path,'norm_sum_region.npy')) # Regional normalizations
+        envelope_el = np.load(os.path.join(outdata_path,'envelope_el.npy'))        # Electron envelopes
+        envelope_h = np.load(os.path.join(outdata_path,'envelope_h.npy'))          # Hole envelopes
+        kzvals = np.load(os.path.join(outdata_path,'kzvals.npy'))                  # k-point values
         logger.info('All required data files loaded successfully')
         
     except Exception as e:
@@ -460,14 +482,18 @@ def generate_png_graphs_from_data():
         reg2mat=reg2mat,               # Region to material mapping
         mat2partic=mat2partic          # Material to particle type mapping
     )
-    
+
     # Recreate material parameter dictionary for computational classes
     # user_defined_params = {
     #     material[0]: params[material[0]], 
     #     material[1]: params[material[1]]
     # }
-    user_defined_params = get_parameters(material)
     
+    if user_params is not None:
+        user_defined_params = get_parameters(material, user_params)
+    else:
+        user_defined_params = get_parameters(material)
+        
     # Reconstruct band structure object with loaded data
     bs = BandStructure(
         mesh=mesh,
@@ -622,21 +648,16 @@ def main():
     # HEADER AND INITIALIZATION
     # =============================================================================
     
-    # Display formatted script header with execution information
-    print_header(SCRIPT_NAME)
+    if rank == 0:
+        # Display formatted script header with execution information
+        print_header(SCRIPT_NAME)
+        
+        # Display nwkpy library version and build information
+        library_header()
+
+    # Synchronize after header display
+    comm.Barrier()
     
-    # Display nwkpy library version and build information
-    library_header()
-
-    # Perform comprehensive validation of all input parameters    
-    try:                              # Attempt parameter validation
-        consistency_checks(indata)  
-    except ValueError as e:           # Handle validation failures gracefully
-        execution_aborted(e)          # Log error and terminate with proper cleanup
-    else:                             # Validation successful - proceed with calculation
-        logger.info("")  
-        logger.info(f'Input parameters consistency checks passed')        
-
     # =========================================================================
     # MESH LOADING AND VALIDATION
     # =========================================================================
@@ -663,7 +684,9 @@ def main():
         with open(mesh_data, "r") as f:
             content = f.read()
             for line in content.splitlines():
-                logger.info(f'{DLM} {line}')
+                logger.info(f'{DLM}{line}')
+
+    comm.Barrier()
 
     # =============================================================================
     # VARIOUS SETTINGS
@@ -675,6 +698,9 @@ def main():
     # Set chemical potential for this calculation
     mu = chemical_potential
 
+    if MPI_debug:                               # to all ranks!
+        MPI_debug_setup(outdata_path+'/DEBUG')  # create DEBUG directory
+
     # =============================================================================
     # MATERIAL PARAMETER DEFINITION AND LOGGING
     # =============================================================================
@@ -684,12 +710,45 @@ def main():
     #     material[0]: params[material[0]], # Core material parameters from database
     #     material[1]: params[material[1]]  # Shell material parameters from database
     # }
-    user_defined_params = get_parameters(material)
-    
-    # Log material parameters for each region
+    user_defined_params = None
+
     if rank == 0:
+        logger.info("")
+
+        # Create user-defined material parameter dictionary for computational classes
+        if user_params is not None:
+            logger.info(f"User parameters read from file {user_parameters_file}")
+            user_defined_params = get_parameters(material, user_params)
+        else:
+            user_defined_params = get_parameters(material)
+
+        # Log material parameters for each region
         for m in material:
             log_material_params(m, user_defined_params[m])
+
+    # Broadcast of parameters to all processes
+    user_defined_params = comm.bcast(user_defined_params, root=0)
+
+    # Synchronization after broadcast
+    comm.Barrier()
+
+    if rank == 0 and size > 1:
+        logger.info(f'Material parameters broadcasted to all {size} MPI processes')
+
+    # =============================================================================
+    # VALIDATION OF INPUT PARAMETERS
+    # =============================================================================
+    if rank == 0:
+
+        try:                              # Attempt parameter validation
+            consistency_checks(indata)  
+        except ValueError as e:           # Handle validation failures gracefully
+            execution_aborted(e)          # Log error and terminate with proper cleanup
+        else:                             # Validation successful - proceed with calculation
+            logger.info("")
+            logger.info(f'Input parameters consistency checks passed')
+
+    comm.Barrier()
 
     # =============================================================================
     # PLOT GENERATION MODE
@@ -700,7 +759,7 @@ def main():
         try:
             # Check MPI compatibility - plot generation requires single process
             if size > 1 and rank == 0:
-                logger.error('plot_only_mode = {plot_only_mode} is incompatible with MPI parallelization')
+                logger.error(f'plot_only_mode = {plot_only_mode} is incompatible with MPI parallelization')
                 raise ValueError('MPI incompatible - Run plot-only mode on a single process')
         except ValueError as e:
             execution_aborted(e)
@@ -780,6 +839,8 @@ def main():
             logger.info(f"{DLM}Output root directory     : {directory_name}")
             logger.info(f"{DLM}Text data file generation : {generate_txt_files}")
             logger.info(f"{DLM}Graph generation          : {generate_png_graphs}")
+
+    comm.Barrier()
 
     # =========================================================================
     # ELECTROSTATIC POTENTIAL CALCULATION
