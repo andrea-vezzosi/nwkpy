@@ -81,11 +81,14 @@ SCRIPT_NAME = 'Self-consistent Schrödinger-Poisson band structure calculation'
 # =============================================================================
 
 # Import all simulation parameters from the input configuration file
-indata = INPUT_FILE_NAME+'.py'
-if not os.path.exists(indata):  
-    execution_aborted(f"Input file '{indata}' not found")  # Graceful termination with error logging
-else:
-    from indata import *
+indata = INPUT_FILE_NAME+'.py'       # INPUT_FILE_NAME defined in nwkpy.config
+
+# check if input file exists
+if not os.path.exists(indata):
+    execution_aborted(f"Input file '{indata}' not found", rank=0)     
+
+# import inputs
+from indata import *
     
 # =============================================================================
 # OUTPUT DIRECTORY SETUP
@@ -119,22 +122,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)   # Get logger instance for this module
 
-# Display log file location on stdout for user reference
-print(f'\nAll log messages sent to file: {log_file}\n')
-
 # =============================================================================
-# USER PARAMETERS
+# USER BAND PARAMETERS
 # =============================================================================
 
-# Read band parameters provided by the user, if any
 if user_parameters_file is not None:
-    try:
-        with open(user_parameters_file, 'r') as f:
-            user_params = eval(f.read())
-    except FileNotFoundError:
-        execution_aborted(f"User parameters file '{user_parameters_file}' not found.")
-else:
-    user_params = None
+    
+    # check if file exists
+    if not os.path.exists(user_parameters_file):
+        execution_aborted(f"User parameters file '{user_parameters_file}' not found", rank=0)
+
+    # reads user parameters
+    with open(user_parameters_file, 'r') as f:
+        user_params = eval(f.read())
+
+    # update dictionary with user provided parameters, if duplicate labels, added wins
+    params.update(user_params) 
 
 # =============================================================================
 # MESH FILES
@@ -145,15 +148,13 @@ mesh_file = os.path.join(cdir, mesh_name + ".msh")  # GMSH mesh geometry file
 mesh_data = os.path.join(cdir, mesh_name + ".dat")  # Mesh metadata and region definitions
 
 # Verify that required mesh files exist before proceeding
-try:
-    if not os.path.exists(mesh_file):  # Check for primary mesh file
-        raise FileNotFoundError(f"Mesh file '{mesh_file}' not found")
-    if not os.path.exists(mesh_data):  # Check for mesh metadata file
-        raise FileNotFoundError(f"Mesh data file '{mesh_data}' not found")
-except FileNotFoundError as f:
-    execution_aborted(f)               # Graceful termination with error logging
-    
+if not os.path.exists(mesh_file):
+    execution_aborted(f"Mesh file '{mesh_file}' not found", rank=0)
+if not os.path.exists(mesh_data):
+    execution_aborted(f"Mesh data file '{mesh_data}' not found", rank=0)
+
 # =============================================================================
+
 # MPI SETUP AND PROCESS INITIALIZATION
 # =============================================================================
 
@@ -211,7 +212,69 @@ def get_density_resid(rho1_el, rho1_h, rho2_el, rho2_h):
 
     return n_resid, p_resid
 
-def consistency_checks(indata):
+def check_required_parameters():
+    """
+    Check if all required parameters from indata.py are present in the current namespace.
+    
+    Returns:
+        bool: True if all required parameters are present, False otherwise
+    """
+    
+    # List of all required parameters from indata.py
+    required_parameters = [
+        'directory_name',
+        'mesh_name',
+        'generate_txt_files',
+        'generate_png_graphs',
+        'MPI_debug',
+        'material',
+        'valence_band',
+        'user_parameters_file',
+        'principal_axis_direction',
+        'lattice_constant',
+        'temperature',
+        'carrier',
+        'chemical_potential_set',
+        'electric_field_set',
+        'e_search',
+        'number_eigenvalues',
+        'k_range',
+        'number_k_pts',
+        'init_pot_name',
+        'maxiter',
+        'maxchargeerror',
+        'maxchargeerror_dk',
+        'rescale',
+        'modified_EFA',
+        'character_threshold',
+        'shape_function_kp',
+        'shape_function_poisson',
+        'betamix',
+        'maxter',
+        'w0',
+        'use_wm',
+        'toreset',
+        'dirichlet',
+        'plotting_preferencies_bands',
+        'plotting_preferencies_density',
+        'plotting_preferencies_potential'
+    ]
+    
+    # Check if each parameter exists in the current namespace
+    missing_parameters = []
+    for param in required_parameters:
+        try:
+            # Try to access the variable
+            globals()[param]
+        except KeyError:
+            missing_parameters.append(param)
+    
+    # Print results
+    if missing_parameters:
+        raise ValueError(f"Missing required parameters: {missing_parameters}")
+
+
+def consistency_checks():
     """
     Perform comprehensive consistency checks on input parameters from indata_updated.py.
 
@@ -221,10 +284,6 @@ def consistency_checks(indata):
     Raises:
         ValueError: If any parameter is invalid, inconsistent, or out of range.
     """
-
-    # log input file
-    logger.info("")
-    logger.info(f"Input read from file {indata}")
 
     # Check output directory and mesh name
     if not isinstance(directory_name, str) or not directory_name:
@@ -238,12 +297,10 @@ def consistency_checks(indata):
     if not (isinstance(material, list) and len(material) == 2):
         logger.error(f"You entered material = {material}")
         raise ValueError("material must be a list of two material names (core, shell).")
-    if any(m not in params and m not in user_params for m in material):
+    if any(m not in params for m in material):
         logger.error(f"You entered material = {material}")
         logger.error(f"One material is not available in database or user parameters")
         logger.error(f'Available materials in database: {list(params.keys())}')
-        if user_params is not None:
-            logger.error(f'Available materials in user parameters: {list(user_params.keys())}')
         raise ValueError(f"Unavailable material(s) - Choose an available material or update the parameters database")
 
     # Check valence_band
@@ -254,7 +311,7 @@ def consistency_checks(indata):
     # Check principal_axis_direction
     if principal_axis_direction not in PRINCIPAL_AXIS_DIRECTIONS:
         logger.error(f"You entered principal_axis_direction = {principal_axis_direction}")
-        raise ValueError(f"principal_axis_direction is not valid.")
+        raise ValueError(f"principal_axis_direction must be one of {PRINCIPAL_AXIS_DIRECTIONS}.")
 
     # Check lattice_constant
     if not (isinstance(lattice_constant, (float, int)) and lattice_constant > 0):
@@ -369,15 +426,15 @@ def plot_production(bs,p,rho_el,rho_h,path_mu):
     
     # Band structure plot
     figure_bands = bs.plot_bands(**plotting_preferencies_bands)
-    figure_bands.savefig(path_mu+'/energy_bands.png', bbox_inches="tight")
+    figure_bands.savefig(os.path.join(path_mu, 'energy_bands.png'), bbox_inches="tight")
 
     # Carrier density distribution plot
     figure_density = bs.plot_density(rho_el, rho_h, **plotting_preferencies_density)
-    figure_density.savefig(path_mu+'/carrier_density.png', bbox_inches="tight")
+    figure_density.savefig(os.path.join(path_mu, 'carrier_density.png'), bbox_inches="tight")
 
     # Electrostatic potential plot
     figure_potential = p.epot.plot(**plotting_preferencies_potential)
-    figure_potential.savefig(path_mu+'/potential.png', bbox_inches="tight")
+    figure_potential.savefig(os.path.join(path_mu, 'potential.png'), bbox_inches="tight")
 
 # =============================================================================
 # MAIN CALCULATION FUNCTION
@@ -395,30 +452,54 @@ def main():
     5. Output generation and convergence monitoring
     """
     
+
     # =============================================================================
     # HEADER AND INITIALIZATION
     # =============================================================================
     
     if rank == 0:
-        
         # Display formatted script header with execution information
         print_header(SCRIPT_NAME)
         
         # Display nwkpy library version and build information
         library_header()
-    
-        # Perform comprehensive validation of all input parameters
-        try:                              # Attempt parameter validation
-            consistency_checks(indata)  
-        except ValueError as e:           # Handle validation failures gracefully
-            execution_aborted(e)          # Log error and terminate with proper cleanup
-        else:                             # Validation successful - proceed with calculation
-            logger.info("")  
-            logger.info(f'Input parameters consistency checks passed')       
-        
+
+        # Display log file location on stdout for user reference
+        print(f'\nAll log messages sent to file: {log_file}\n')
+
     # Synchronize after header display
     comm.Barrier()
     
+    # =============================================================================
+    # VALIDATION OF INPUT PARAMETERS
+    # =============================================================================
+    
+    if rank == 0:
+        logger.info("")
+        logger.info(f"Input read from file {indata}")
+
+        try:
+            check_required_parameters()     # check if all inputs are present
+            consistency_checks()            # check if all inputs are consistent
+            error = None
+            
+        except ValueError as e:
+            error = str(e)
+    else:
+        error = None
+
+    # Broadcast del risultato
+    error = comm.bcast(error, root=0)
+
+    # Se c'è errore, TUTTI i processi escono
+    if error is not None:
+        execution_aborted(error,rank=rank)
+
+    if rank == 0:
+        logger.info('Input parameter validation completed successfully')
+
+    comm.Barrier()
+        
     # =========================================================================
     # PHYSICAL SYSTEM CONFIGURATION
     # =========================================================================
@@ -511,40 +592,32 @@ def main():
     particle_s_components = 'electron'
     particle_p_components = 'electron'
 
-    # =========================================================================
-    # MATERIAL PARAMETER DATABASE ACCESS
-    # =========================================================================
-        
+    # =============================================================================
+    # MATERIAL PARAMETER DEFINITION AND LOGGING
+    # =============================================================================
+
     # Create user-defined material parameter dictionary for computational classes
     # user_defined_params = {
     #     material[0]: params[material[0]], # Core material parameters from database
     #     material[1]: params[material[1]]  # Shell material parameters from database
     # }
-    user_defined_params = None
 
+    user_defined_params = get_parameters(material)
+    
     if rank == 0:
         logger.info("")
 
         # Create user-defined material parameter dictionary for computational classes
-        if user_params is not None:
+        if user_parameters_file is not None:
             logger.info(f"User parameters read from file {user_parameters_file}")
-            user_defined_params = get_parameters(material, user_params)
-        else:
-            user_defined_params = get_parameters(material)
 
         # Log material parameters for each region
         for m in material:
             log_material_params(m, user_defined_params[m])
 
-    # Broadcast of parameters to all processes
-    user_defined_params = comm.bcast(user_defined_params, root=0)
-
     # Synchronization after broadcast
     comm.Barrier()
     
-    if rank == 0 and size > 1:
-        logger.info(f'Material parameters broadcasted to all {size} MPI processes')
-
     # =========================================================================
     # FINITE ELEMENT MESH INITIALIZATION
     # =========================================================================
@@ -597,9 +670,9 @@ def main():
     
     # Save k-point array (only rank 0 writes to avoid conflicts)
     if rank == 0:
-        np.save(outdata_path+'/kzvals', kzvals)
+        np.save(os.path.join(outdata_path, 'kzvals'), kzvals)
         if generate_txt_files:
-            np.savetxt(outdata_path + '/kzvals.txt', kzvals, fmt='%.5g', delimiter=DLM)
+            np.savetxt(os.path.join(outdata_path, 'kzvals.txt'), kzvals, fmt='%.5g', delimiter=DLM)
 
     # Distribute k-points across MPI processes for parallel computation
     # Each process handles a subset of k-points
@@ -613,8 +686,8 @@ def main():
             logger.error(f"the number of k points {number_k_pts} not a multple of the number of process {size}")
             raise ValueError("Inconsitent number of processes")
     except ValueError as e:           # Handle validation failures gracefully
-        execution_aborted(e)          # Log error and terminate with proper cleanup
-           
+        execution_aborted(e, rank=rank)  # Log error and terminate with proper cleanup
+
     # =========================================================================
     # PARAMETER SWEEP SETUP
     # =========================================================================
@@ -625,8 +698,8 @@ def main():
 
     # Save parameter arrays for later reference
     if rank == 0:
-        np.save(outdata_path+'/electric_field', electric_field)
-    
+        np.save(os.path.join(outdata_path, 'electric_field'), electric_field)
+
     # Synchronize after parameter setup
     comm.Barrier()
     
@@ -657,7 +730,7 @@ def main():
         if rank == 0:
             logger.info("")
             logger.info("File management")
-            logger.info(f"{DLM}Current directory         : {cdir}")
+            logger.info(f"{DLM}Home directory            : {cdir}")
             logger.info(f"{DLM}Output root directory     : {directory_name}")
             logger.info(f"{DLM}Text data file generation : {generate_txt_files}")
             logger.info(f"{DLM}Graph generation          : {generate_png_graphs}")
@@ -688,9 +761,9 @@ def main():
             # create output directory
             os.makedirs(path_ef, exist_ok=True)
             # Save electric field parameters
-            np.save(path_ef+'/electric_field_value', ef[0])
-            np.save(path_ef+'/electric_field_direction', ef[1])
-        
+            np.save(os.path.join(path_ef, 'electric_field_value'), ef[0])
+            np.save(os.path.join(path_ef, 'electric_field_direction'), ef[1])
+
         # Synchronize all processes before proceeding
         comm.Barrier()
 
@@ -711,9 +784,9 @@ def main():
             
             if rank == 0:
                 os.makedirs(path_mu, exist_ok=True)
-                np.save(path_mu+'/mu', mu)
+                np.save(os.path.join(path_mu, 'mu'), mu)
             if MPI_debug:                           # to all ranks!
-                MPI_debug_setup(path_mu+'/DEBUG')   # create DEBUG directory
+                MPI_debug_setup(os.path.join(path_mu, 'DEBUG'))   # create DEBUG directory
 
             # Synchronize before all processes proceed
             comm.Barrier()
@@ -781,12 +854,13 @@ def main():
             if rank == 0:
                 logger.info("")
                 logger.info('Starting SCF Schrödinger-Poisson cycle')
-            
-            if rank == 0:
                 logger.info("")
-                logger.info("Legend: 1-Iteration 2-Total charge 3-Max potential  4-Mean abs error potential  ")
-                logger.info("5-Negative density residue [cm^-1] 6-[%] 7-Positive density residue [cm^-1]  8-[%]  9-Data saved  10-Graph generated")
-                logger.info(" " + "-"*80)
+                logger.info(" " + "-"*103)
+                logger.info("                                          SCF monitor")
+                logger.info(" " + "-"*103)
+                logger.info("Legend: 1:Iteration 2:Total charge 3:Max potential  4:Mean abs error potential  ")
+                logger.info("5:Neg. density residue [cm^-1] 6:[%] 7:Pos. density residue [cm^-1]  8:[%]  9:Data saved  10:Graphs")
+                logger.info(" " + "-"*103)
                 logger.info(" (1)    (2)          (3)          (4)          (5)          (6)        (7)          (8)         (9) (10)")
 
             for j in range(maxiter):
@@ -918,38 +992,38 @@ def main():
                 try:
                     if rank == 0:
                         # Core band structure data
-                        np.save(path_mu+'/bands', bs.bands)
-                        np.save(path_mu+'/spinor_dist', bs.spinor_distribution)
-                        np.save(path_mu+'/norm_sum_region', bs.norm_sum_region)
+                        np.save(os.path.join(path_mu, 'bands'), bs.bands)
+                        np.save(os.path.join(path_mu, 'spinor_dist'), bs.spinor_distribution)
+                        np.save(os.path.join(path_mu, 'norm_sum_region'), bs.norm_sum_region)
                         if generate_txt_files:
-                            np.savetxt(path_mu+'/bands.txt', bs.bands, fmt='%.5g', delimiter=DLM)
+                            np.savetxt(os.path.join(path_mu, 'bands.txt'), bs.bands, fmt='%.5g', delimiter=DLM)
                             # Save each k-point as separate text file due to 3D array structure
                             for i in range(bs.spinor_distribution.shape[0]):
                                 slice_2d = bs.spinor_distribution[i]
-                                np.savetxt(path_mu+f'/spinor_dist_{i}.txt', slice_2d, fmt='%.5g', delimiter=DLM)  
+                                np.savetxt(os.path.join(path_mu, f'spinor_dist_{i}.txt'), slice_2d, fmt='%.5g', delimiter=DLM)
                             # Save each k-point as separate text file due to 3D array structure
                             for i in range(bs.norm_sum_region.shape[0]):
                                 slice_2d = bs.norm_sum_region[i]
-                                np.savetxt(path_mu+f'/norm_sum_region_{i}.txt', slice_2d, fmt='%.5g', delimiter=DLM)  
+                                np.savetxt(os.path.join(path_mu, f'norm_sum_region_{i}.txt'), slice_2d, fmt='%.5g', delimiter=DLM)
 
                         # Wavefunction envelope functions
-                        np.save(path_mu+'/envelope_el', bs.psi_el)  
-                        np.save(path_mu+'/envelope_h', bs.psi_h) 
-                        
+                        np.save(os.path.join(path_mu, 'envelope_el'), bs.psi_el)  
+                        np.save(os.path.join(path_mu, 'envelope_h'), bs.psi_h) 
+
                         # Charge and matrix data
-                        np.save(path_mu+'/total_charge'+idj, total_charge)
+                        np.save(os.path.join(path_mu, 'total_charge'+idj), total_charge)
                         if generate_txt_files:
-                            np.savetxt(path_mu+'/total_charge'+idj+'.txt', [total_charge])
-                            
+                            np.savetxt(os.path.join(path_mu, 'total_charge'+idj+'.txt'), [total_charge])
+
                         # Save the overlap matrix for post-processing
-                        save_npz(path_mu+"/B.npz", bs.solver[0].bgl)
-                        
-                        saved_data = "✓" 
+                        save_npz(os.path.join(path_mu, "B.npz"), bs.solver[0].bgl)
+
+                        saved_data = "✓"
                 except Exception as e:
                     logger.error(f"Error saving output files: {e}")
-                    execution_aborted(e)  # Handle file writing errors gracefully
-                
-                try: 
+                    execution_aborted(e, rank=rank)  # Handle file writing errors gracefully
+
+                try:
                     # Generate visualization plots
                     if rank == 0:
                         if generate_png_graphs:
@@ -960,8 +1034,8 @@ def main():
                             saved_graphs = "✗"
                 except Exception as e:
                     logger.error(f"Error generating plots: {e}")
-                    execution_aborted(e)
-                    
+                    execution_aborted(e, rank=rank)
+
                 # =============================================================
                 # CONVERGENCE ASSESSMENT
                 # =============================================================
@@ -1002,11 +1076,11 @@ def main():
                     p_resid_rel_lst.append(p_resid_rel)
                     
                     if rank == 0:
-                        np.save(path_mu+"/n_resid", np.array(n_resid_lst))
-                        np.save(path_mu+"/n_resid_rel", np.array(n_resid_rel_lst))
-                        np.save(path_mu+"/p_resid", np.array(p_resid_lst))
-                        np.save(path_mu+"/p_resid_rel", np.array(p_resid_rel_lst))
-    
+                        np.save(os.path.join(path_mu, "n_resid"), np.array(n_resid_lst))
+                        np.save(os.path.join(path_mu, "n_resid_rel"), np.array(n_resid_rel_lst))
+                        np.save(os.path.join(path_mu, "p_resid"), np.array(p_resid_lst))
+                        np.save(os.path.join(path_mu, "p_resid_rel"), np.array(p_resid_rel_lst))
+
                     # Check if convergence criteria are met
                     if (n_resid_rel <= maxchargeerror and p_resid_rel <= maxchargeerror):
                         if rank == 0:
@@ -1079,8 +1153,8 @@ def main():
                 Vin = np.copy(Vout)
                 
                 # Save the updated potential
-                np.save(path_mu+'/epot'+str(idj), Vin)
-                
+                np.save(os.path.join(path_mu, 'epot'+str(idj)), Vin)
+
                 # Memory management to prevent memory leaks
                 if j < maxiter - 1:
                     del(bs)
@@ -1118,9 +1192,9 @@ def main():
         logger.info("")
         logger.info('All electric field calculations completed successfully')
     
-    # Log successful completion of the entire calculation
-    if rank == 0:
-        execution_successful()
+    comm.Barrier()
+
+    execution_successful(rank=0)
 
 # =============================================================================
 # SCRIPT EXECUTION

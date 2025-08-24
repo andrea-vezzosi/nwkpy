@@ -37,32 +37,47 @@ logger = logging.getLogger(__name__)
 # UTILITY FUNCTIONS
 # =============================================================================
 
-def execution_aborted(e):
+def execution_aborted(e,rank=None):
     """
     Handle execution errors by logging the exception and exiting gracefully.
     This function is called when a critical error occurs, preventing further calculations.
 
     Args:
-        e (Exception): The exception that caused the execution to abort
+        e (Exception or str): The exception or error message that caused the execution to abort
         
     Note:
-        Terminates the program with exit code 1 after logging the error.
+        - All MPI processes must reach this function for proper termination
+        - Only rank 0 logs detailed error messages to avoid duplicates
+        - Uses sys.exit(1) to indicate error termination
     """
-    logger.error(f"{str(e)}")
-    logger.error(f"Execution aborted.")
+    
+    # Only rank 0 logs the error (rank is global variable)
+    if rank == 0:
+        logger.error(f"{str(e)}")
+        logger.error(f"Execution aborted.")
+    
+    # ALL processes exit with error code
     sys.exit(1)
 
-def execution_successful():
+def execution_successful(rank=None):
     """
     Log successful completion of the simulation.
     
     Provides consistent success messaging both to log files and console output.
     Used as the final step in successful calculation runs.
+    
+    NOTE: All MPI processes must reach this function for proper termination.
     """
-    logger.info("")
-    logger.info('Normal successful completion.')
-    print('Normal successful completion.')
-
+    
+    # Only rank 0 logs the success message (rank is global variable)
+    if rank == 0:
+        logger.info("")
+        logger.info('Normal successful completion.')
+        print('Normal successful completion.')
+    
+    # ALL processes exit here - this is the key fix
+    sys.exit(0)
+    
 def host_IP():
     """
     Log hostname and IP address for debugging distributed calculations.
@@ -294,7 +309,7 @@ def log_self_consistent_cycle_parameters(maxiter, maxchargeerror):
     logger.info(f'{DLM}Maximum iterations    : {maxiter}')
     logger.info(f'{DLM}Convergence criterion : {maxchargeerror}')
 
-def get_parameters(material, user_params=None):
+def get_parameters(material):
     """
     Get parameters for the k.p Hamiltonian of the specified materials.
 
@@ -318,8 +333,5 @@ def get_parameters(material, user_params=None):
     #         parameters[m] = params[m]   
 
     for m in material:
-        if user_params is not None and m in user_params:
-            parameters[m] = user_params[m]
-        else:
-            parameters[m] = params[m]
+        parameters[m] = params[m]
     return parameters

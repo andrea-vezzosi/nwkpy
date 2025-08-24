@@ -63,7 +63,7 @@ MPI_debug = False                 # If True, enable MPI debugging output
 # =====================
 
 # Core-shell material specification
-material = ["InAs", "GaSb"]       # Materials for [core, shell] of the nanowire
+material = ["InAs+", "GaSb"]       # Materials for [core, shell] of the nanowire
                                   # Must exist in the nwkpy material parameter database
                                   # Use same material for homogeneous samples
 
@@ -72,10 +72,9 @@ valence_band = [0.0, 0.56]        # Valence band edge offsets in eV for [core, s
                                   # Sets the energy reference for each material
                                   # Difference determines band offset (Type I/II alignment)
 
-user_parameters_file = None       # file with user-defined parameters (if any)
-                                  # e.g. user_parameters_file = "user_parameters.dict"  
-                                  # Keys should match those in material list
+user_parameters_file = "user_parameters.dict"  # file with user-defined parameters (if any)
                                   # If None, internal database is used
+                                  # Keys should match those in material list
 
 # =====================
 # CRYSTAL STRUCTURE

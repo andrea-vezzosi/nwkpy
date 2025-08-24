@@ -47,8 +47,8 @@ import logging                          # Logging library for structured output 
 # Scientific computing utilities
 from scipy.sparse import save_npz, load_npz  # Sparse matrix I/O operations for efficiency
 
-# import socket                         # Network info for debugging (commented - used in utilities)
-import gc                               # Garbage collection for memory management
+# Garbage collection for memory management
+import gc                               
 
 # =============================================================================
 # CORE LIBRARY IMPORTS
@@ -57,7 +57,7 @@ import gc                               # Garbage collection for memory manageme
 # High-level timing and diagnostic utilities from nwkpy
 from nwkpy import tic, toc              # High-resolution timing functions for performance analysis
 from nwkpy import library_header        # Display library version and build information
-# from nwkpy import Logger             # Legacy logger (deprecated in favor of Python logging)
+# from nwkpy import Logger              # Legacy logger (deprecated in favor of Python logging)
 
 # Core computational classes for nanowire band structure calculations
 from nwkpy.fem import Mesh              # Finite element mesh handling and region assignment
@@ -67,13 +67,13 @@ from nwkpy import FreeChargeDensity     # Free carrier density calculator with F
 from nwkpy import ElectrostaticPotential # Potential field container and manipulation
 from nwkpy import DopingChargeDensity   # Doping charge density (not used in this intrinsic case)
 from nwkpy import _constants            # Physical constants (fundamental and material-specific)
-from nwkpy import MPI_debug_setup  # MPI debugging utilities for parallel development
+from nwkpy import MPI_debug_setup       # MPI debugging utilities for parallel development
 
 # Material parameter database access
 from nwkpy._database import params      # Comprehensive material parameter database
 
 # =============================================================================
-# LOCAL IMPORTS 
+# IMPORT UTILITIES FOR LOGGING AND CONFIGURATIONS 
 # =============================================================================
 
 # Import local utility functions for logging and error handling
@@ -94,11 +94,14 @@ SCRIPT_NAME = 'Core-Shell Nanowire band structure calculation'
 # =============================================================================
 
 # Import all simulation parameters from the input configuration file
-indata = INPUT_FILE_NAME+'.py'
-if not os.path.exists(indata):  
-    execution_aborted(f"Input file '{indata}' not found")  # Graceful termination with error logging
-else:
-    from indata import *
+indata = INPUT_FILE_NAME+'.py'       # INPUT_FILE_NAME defined in nwkpy.config
+
+# check if input file exists
+if not os.path.exists(indata):       
+    execution_aborted(f"Input file '{indata}' not found", rank=0)     
+
+# import inputs
+from indata import *
 
 # Execution control logic based on user-specified flags
 # Determines whether to run calculations or only generate plots from existing data
@@ -115,7 +118,7 @@ cdir = os.getcwd()                     # Current working directory (script locat
 outdata_path = os.path.join(cdir, directory_name)
 
 # Construct full path to log file for structured output
-log_file = os.path.join(outdata_path, LOG_FILE_NAME + ".log")
+log_file = os.path.join(outdata_path, LOG_FILE_NAME + ".log") # LOG_FILE_NAME defined in nwkpy.config
 
 # Creates the directory tree if it doesn't exist, no error if it already exists
 os.makedirs(outdata_path, exist_ok=True)
@@ -135,22 +138,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)   # Get logger instance for this module
 
-# Display log file location on stdout for user reference
-print(f'\nAll log messages sent to file: {log_file}\n')
-    
 # =============================================================================
-# USER PARAMETERS
+# USER BAND PARAMETERS
 # =============================================================================
 
-# Read band parameters provided by the user, if any
 if user_parameters_file is not None:
-    try:
-        with open(user_parameters_file, 'r') as f:
-            user_params = eval(f.read())
-    except FileNotFoundError:
-        execution_aborted(f"User parameters file '{user_parameters_file}' not found.")
-else:
-    user_params = None
+    
+    # check if file exists
+    if not os.path.exists(user_parameters_file):
+        execution_aborted(f"User parameters file '{user_parameters_file}' not found", rank=0)
+
+    # reads user parameters
+    with open(user_parameters_file, 'r') as f:
+        user_params = eval(f.read())
+
+    # update dictionary with user provided parameters, if duplicate labels, added wins
+    params.update(user_params) 
 
 # =============================================================================
 # MESH FILES
@@ -161,13 +164,10 @@ mesh_file = os.path.join(cdir, mesh_name + ".msh")  # GMSH mesh geometry file
 mesh_data = os.path.join(cdir, mesh_name + ".dat")  # Mesh metadata and region definitions
 
 # Verify that required mesh files exist before proceeding
-try:
-    if not os.path.exists(mesh_file):  # Check for primary mesh file
-        raise FileNotFoundError(f"Mesh file '{mesh_file}' not found")
-    if not os.path.exists(mesh_data):  # Check for mesh metadata file
-        raise FileNotFoundError(f"Mesh data file '{mesh_data}' not found")
-except FileNotFoundError as f:
-    execution_aborted(f)               # Graceful termination with error logging
+if not os.path.exists(mesh_file):
+    execution_aborted(f"Mesh file '{mesh_file}' not found", rank=0)
+if not os.path.exists(mesh_data):
+    execution_aborted(f"Mesh data file '{mesh_data}' not found", rank=0)
 
 # =============================================================================
 # MPI SETUP AND PROCESS INITIALIZATION
@@ -184,8 +184,7 @@ comm.Barrier()
 # =============================================================================
 # INPUTS CONSISTENCY CHECKS
 # =============================================================================
-
-def consistency_checks(indata):
+def consistency_checks():
     """
     Perform comprehensive consistency checks on input parameters.
 
@@ -194,77 +193,271 @@ def consistency_checks(indata):
 
     Raises:
         ValueError: If any parameter is invalid, inconsistent, or out of range
+        AttributeError: If any required parameter is missing from indata
         
     Note:
-        This function only validates parameter values, not file existence.
+        This function validates all parameter values and existence.
         File checks are performed separately in the main execution flow.
+        Each error is logged with the current value before describing the issue.
+        Termination is managed by the execution_aborted() function.
     """
 
-    # log input file
-    logger.info("")
-    logger.info(f"Input read from file {indata}")
-
-    # Check if all specified materials exist in the nwkpy parameter database
-    if any(m not in params and m not in user_params for m in material):
-        logger.warning(f"material = {material} in not in the database or user parameters")
-        logger.warning(f"Available materials in database : {list(params.keys())}")
-        if not(user_params is None):
-            logger.warning(f"Available materials in user parameters: {list(user_params.keys())}")
-        raise ValueError("Invalid material - Choose available materials or update the parameter database")
-
-    # Validate crystallographic growth direction specification
-    if principal_axis_direction not in PRINCIPAL_AXIS_DIRECTIONS:
-        logger.warning(f"principal_axis_direction = {principal_axis_direction} not available.")
-        logger.warning(f"Valid directions: {PRINCIPAL_AXIS_DIRECTIONS}")
-        raise ValueError("Invalid direction - Choose a valid principal axis direction")
-
-    # Verify character thresholds are within valid probability range [0,1]
-    if any(x < 0 or x > 1 for x in character_threshold):
-        logger.warning(f"character_threshold = {character_threshold} out of range")
-        logger.warning(f"Character thresholds must be in the range [0, 1]")
-        raise ValueError("Invalid character threshold - Choose values in the correct range")
-
-    # Validate carrier type specifications for each material region
-    if any(c not in CARRIER_TYPES for c in carrier):
-        logger.warning(f"carrier = {carrier} not available")
-        logger.warning(f"Valid carrier types: {CARRIER_TYPES}")
-        raise ValueError(f"Invalid carrier type - Choose a valid carrier type for each particle")
-
-    # Check shape function specifications for k·p Hamiltonian
-    if any(s not in SHAPE_FUNCTION_TYPES for s in shape_function_kp):
-        logger.warning(f"shape_function_kp = {shape_function_kp} not available")
-        logger.warning(f"Valid shape function types: {SHAPE_FUNCTION_TYPES}")
-        raise ValueError(f"Invalid shape function type - Choose a valid value")
-
-    # Validate shape function for Poisson equation solver
-    if (shape_function_poisson not in SHAPE_FUNCTION_TYPES):
-        logger.warning(f"shape_function_poisson = {shape_function_poisson} not available")
-        logger.warning(f"Valid shape function types: {SHAPE_FUNCTION_TYPES}")
-        raise ValueError(f"Invalid shape function type - Choose a valid value")
-
-    # Ensure temperature is physically meaningful (positive Kelvin)
-    if temperature <= 0:
-        logger.warning(f"Temperature = {temperature} is negative")
-        logger.warning(f"Temperatures in K must be positive")
-        raise ValueError("Invalid temperature - Choose a positive value")
+    # =============================================================================
+    # MATERIAL PARAMETERS VALIDATION
+    # =============================================================================
     
-    # Validate eigenvalue count for diagonalization
+    # Check materials exist in database
+    if any(m not in params for m in material):
+        invalid_materials = [m for m in material if m not in params]
+        logger.error(f"Invalid materials not found in database: {invalid_materials}")
+        logger.info(f"Available materials in database: {list(params.keys())}")
+        raise ValueError("Invalid material - Choose available materials or provide parameters in a dict file")
+
+    # Check valence_band length matches materials
+    if len(valence_band) != len(material):
+        logger.error(f"valence_band length ({len(valence_band)}) != material length ({len(material)})")
+        raise ValueError("Invalid valence_band - Length must match material list")
+
+    # Check all valence_band values are numeric
+    for i, vb in enumerate(valence_band):
+        if not isinstance(vb, (int, float)):
+            logger.error(f"valence_band[{i}] = {vb} is not numeric")
+            raise ValueError(f"Invalid valence_band[{i}] - Must be numeric")
+
+    # Check rescale length matches materials
+    if len(rescale) != len(material):
+        logger.error(f"rescale length ({len(rescale)}) != material length ({len(material)})")
+        raise ValueError("Invalid rescale - Length must match material list")
+
+    # TO BE CHECKED AND MODIFIED
+    # --------------------------
+    # # Check valid rescale values
+    # for i, r in enumerate(rescale):
+    #     if isinstance(r, str):
+    #         if r not in valid_rescales:
+    #             logger.error(f"rescale[{i}] = '{r}' is not a valid string option")
+    #             logger.info(f"Valid string options: {valid_rescales}")
+    #             raise ValueError(f"Invalid rescale[{i}] - Choose valid string or numeric value")
+    #     elif isinstance(r, (int, float)):
+    #         if r < 0 or r > 1:
+    #             logger.error(f"rescale[{i}] = {r} is out of range [0,1]")
+    #             raise ValueError(f"Invalid rescale[{i}] - Numeric values must be in range [0,1]")
+    #     else:
+    #         logger.error(f"rescale[{i}] = {r} is neither string nor numeric")
+    #         raise ValueError(f"Invalid rescale[{i}] - Must be string ('S=0', 'S=1') or numeric [0,1]")
+
+    # Check carrier length matches materials
+    if len(carrier) != len(material):
+        logger.error(f"carrier length ({len(carrier)}) != material length ({len(material)})")
+        raise ValueError("Invalid carrier - Length must match material list")
+
+    # Check carrier types are valid
+    if any(c not in CARRIER_TYPES for c in carrier):
+        invalid_carriers = [c for c in carrier if c not in CARRIER_TYPES]
+        logger.error(f"Invalid carrier types: {invalid_carriers}")
+        logger.info(f"Valid carrier types: {CARRIER_TYPES}")
+        raise ValueError("Invalid carrier type - Choose a valid carrier type for each material")
+
+    # =============================================================================
+    # SHAPE FUNCTION VALIDATION
+    # =============================================================================
+    
+    # Check shape function for kp has exactly 2 elements
+    if len(shape_function_kp) != 2:
+        logger.error(f"shape_function_kp length ({len(shape_function_kp)}) != 2 (expected [electron, hole])")
+        raise ValueError("Invalid shape_function_kp - Must have exactly 2 elements [electron, hole]")
+
+    # Check kp shape functions are valid
+    if any(s not in SHAPE_FUNCTION_TYPES for s in shape_function_kp):
+        invalid_shapes = [s for s in shape_function_kp if s not in SHAPE_FUNCTION_TYPES]
+        logger.error(f"Invalid shape function types: {invalid_shapes}")
+        logger.info(f"Valid shape function types: {SHAPE_FUNCTION_TYPES}")
+        raise ValueError("Invalid shape_function_kp - Choose valid shape function types")
+
+    # Check Poisson shape function
+    if shape_function_poisson not in SHAPE_FUNCTION_TYPES:
+        logger.error(f"shape_function_poisson = '{shape_function_poisson}' is not valid")
+        logger.info(f"Valid shape function types: {SHAPE_FUNCTION_TYPES}")
+        raise ValueError("Invalid shape_function_poisson - Choose a valid shape function type")
+
+    # =============================================================================
+    # PHYSICAL PARAMETERS VALIDATION
+    # =============================================================================
+    
+    # Check principal axis direction
+    if principal_axis_direction not in PRINCIPAL_AXIS_DIRECTIONS:
+        logger.error(f"principal_axis_direction = '{principal_axis_direction}' is not valid")
+        logger.info(f"Valid directions: {PRINCIPAL_AXIS_DIRECTIONS}")
+        raise ValueError("Invalid principal_axis_direction - Choose a valid crystallographic direction")
+
+    # Check temperature is positive
+    if temperature <= 0:
+        logger.error(f"temperature = {temperature} K is non-positive")
+        logger.info("Temperature must be positive (> 0 K)")
+        raise ValueError("Invalid temperature - Choose a positive value")
+
+    # Check chemical potential is numeric
+    if not isinstance(chemical_potential, (int, float)):
+        logger.error(f"chemical_potential = {chemical_potential} is not numeric")
+        raise ValueError("Invalid chemical_potential - Must be numeric")
+
+    # Check character thresholds
+    if len(character_threshold) != 2:
+        logger.error(f"character_threshold length ({len(character_threshold)}) != 2 (expected [electron, hole])")
+        raise ValueError("Invalid character_threshold - Must have exactly 2 elements [electron, hole]")
+
+    for i, threshold in enumerate(character_threshold):
+        if not isinstance(threshold, (int, float)):
+            logger.error(f"character_threshold[{i}] = {threshold} is not numeric")
+            raise ValueError(f"Invalid character_threshold[{i}] - Must be numeric")
+        if threshold < 0 or threshold > 1:
+            logger.error(f"character_threshold[{i}] = {threshold} is out of range [0,1]")
+            logger.info("Character thresholds must be probabilities in range [0,1]")
+            raise ValueError(f"Invalid character_threshold[{i}] - Must be in range [0,1]")
+
+    # =============================================================================
+    # CALCULATION PARAMETERS VALIDATION
+    # =============================================================================
+    
+    # Check number of eigenvalues
     if number_eigenvalues < 1:
-        logger.warning(f"number_eigenvalues = {number_eigenvalues} is zero or negative")
-        logger.warning(f"The number of eigenvalues for diagonalization should be at least 1")
-        raise ValueError("Invalid number of eigenvalues - Choose a positive value")
- 
-    # Check k-space range ordering (start < end)
+        logger.error(f"number_eigenvalues = {number_eigenvalues} is less than 1")
+        logger.info("Number of eigenvalues for diagonalization should be at least 1")
+        raise ValueError("Invalid number_eigenvalues - Choose a positive integer")
+
+    # Check energy search is numeric
+    if not isinstance(e_search, (int, float)):
+        logger.error(f"e_search = {e_search} is not numeric")
+        raise ValueError("Invalid e_search - Must be numeric")
+
+    # Check k_range has 2 elements and proper ordering
+    if len(k_range) != 2:
+        logger.error(f"k_range length ({len(k_range)}) != 2 (expected [start, end])")
+        raise ValueError("Invalid k_range - Must have exactly 2 elements [start, end]")
+
+    for i, k_val in enumerate(k_range):
+        if not isinstance(k_val, (int, float)):
+            logger.error(f"k_range[{i}] = {k_val} is not numeric")
+            raise ValueError(f"Invalid k_range[{i}] - Must be numeric")
+
     if k_range[0] > k_range[1]:
-        logger.warning(f"k_range = {k_range} has invalid order of extrema")
-        logger.warning("k-point start must be less than end")
-        raise ValueError("Invalid k-value range extrema - Choose correct order")
-        
-    # Validate k-point sampling density
+        logger.error(f"k_range = {k_range} has invalid ordering (start > end)")
+        logger.info("k-point start must be less than or equal to end")
+        raise ValueError("Invalid k_range - Start value must be ≤ end value")
+
+    # Check number of k points
     if number_k_pts < 1:
-        logger.warning(f"number_k_pts = {number_k_pts} is zero or negative")
-        logger.warning(f"The number of k points should be at least 1")
-        raise ValueError("Number of k-points must be at least 1")
+        logger.error(f"number_k_pts = {number_k_pts} is less than 1")
+        logger.info("Number of k-points should be at least 1")
+        raise ValueError("Invalid number_k_pts - Must be at least 1")
+
+    # =============================================================================
+    # MESH AND FILE PARAMETERS VALIDATION
+    # =============================================================================
+    
+    # Check mesh name is not empty
+    if not isinstance(mesh_name, str) or len(mesh_name.strip()) == 0:
+        logger.error(f"mesh_name = '{mesh_name}' is invalid")
+        raise ValueError("Invalid mesh_name - Must be a non-empty string")
+
+    # Check directory name is not empty
+    if not isinstance(directory_name, str) or len(directory_name.strip()) == 0:
+        logger.error(f"directory_name = '{directory_name}' is invalid")
+        raise ValueError("Invalid directory_name - Must be a non-empty string")
+
+    # Check lattice constant is positive
+    if not isinstance(lattice_constant, (int, float)) or lattice_constant <= 0:
+        logger.error(f"lattice_constant = {lattice_constant} is invalid")
+        logger.info("Lattice constant must be positive (> 0 Å)")
+        raise ValueError("Invalid lattice_constant - Choose a positive value")
+
+    # =============================================================================
+    # BOOLEAN FLAGS VALIDATION
+    # =============================================================================
+    
+    boolean_params = [
+        ('modified_EFA', modified_EFA),
+        ('generate_txt_files', generate_txt_files), 
+        ('generate_png_graphs', generate_png_graphs),
+        ('plot_only_mode', plot_only_mode),
+        ('MPI_debug', MPI_debug)
+    ]
+    
+    for param_name, param_value in boolean_params:
+        if not isinstance(param_value, bool):
+            logger.error(f"{param_name} = {param_value} is not boolean")
+            raise ValueError(f"Invalid {param_name} - Must be True or False")
+
+    # =============================================================================
+    # OPTIONAL PARAMETERS VALIDATION
+    # =============================================================================
+    
+    # Check optional user parameters file
+    if user_parameters_file is not None and not isinstance(user_parameters_file, str):
+        logger.error(f"user_parameters_file = {user_parameters_file} is not None or string")
+        raise ValueError("Invalid user_parameters_file - Must be None or string")
+
+    # Check optional initial potential file
+    if init_pot_name is not None and not isinstance(init_pot_name, str):
+        logger.error(f"init_pot_name = {init_pot_name} is not None or string")
+        raise ValueError("Invalid init_pot_name - Must be None or string")
+
+# ========================================================================
+# COMPLETE INPUT CHECK
+# ========================================================================
+def check_required_parameters():
+    """
+    Check if all required parameters from indata.py are present in the current namespace.
+    
+    Returns:
+        bool: True if all required parameters are present, False otherwise
+    """
+    
+    # List of all required parameters from indata.py
+    required_parameters = [
+        'directory_name',
+        'mesh_name',
+        'plot_only_mode',
+        'generate_txt_files',
+        'generate_png_graphs',
+        'MPI_debug',
+        'material',
+        'valence_band',
+        'user_parameters_file',
+        'principal_axis_direction',
+        'lattice_constant',
+        'temperature',
+        'chemical_potential',
+        'e_search',
+        'number_eigenvalues',
+        'k_range',
+        'number_k_pts',
+        'rescale',
+        'carrier',
+        'electric_field',
+        'shape_function_kp',
+        'shape_function_poisson',
+        'init_pot_name',
+        'modified_EFA',
+        'character_threshold',
+        'dirichlet',
+        'plotting_preferencies_bands',
+        'plotting_preferencies_potential',
+        'plotting_preferencies_density'
+    ]
+    
+    # Check if each parameter exists in the current namespace
+    missing_parameters = []
+    for param in required_parameters:
+        try:
+            # Try to access the variable
+            globals()[param]
+        except KeyError:
+            missing_parameters.append(param)
+    
+    # Print results
+    if missing_parameters:
+        raise ValueError(f"Missing required parameters: {missing_parameters}")
 
 # =========================================================================
 # PHYSICAL SYSTEM CONFIGURATION
@@ -386,7 +579,6 @@ def plot_production(bs,p,rho_el,rho_h):
 
     logger.info("")
     logger.info('Generating plots')
-    print('output directory:', outdata_path)
     
     # Generate band structure dispersion plot showing E(k) relationships
     # Displays energy bands vs k-space with color-coded carrier character
@@ -438,7 +630,6 @@ def generate_png_graphs_from_data():
     """
     
     logger.info("")
-    logger.info('Generating plots from saved data')
     logger.info(f'Looking for data files in {directory_name}')
     
     # Define list of required data files for plot generation
@@ -455,9 +646,7 @@ def generate_png_graphs_from_data():
     
     # Abort plot generation if any required files are missing
     if missing_files:
-        logger.error(f'Missing data files {missing_files} in {directory_name}')
-        logger.error('Cannot generate plots without complete data set')
-        execution_aborted('Missing data files')
+        raise FileNotFoundError(f'Missing data files {missing_files} in {directory_name}')
 
     # Load all saved numerical results from binary NumPy files
     # These files contain the complete state of a finished calculation
@@ -489,10 +678,7 @@ def generate_png_graphs_from_data():
     #     material[1]: params[material[1]]
     # }
     
-    if user_params is not None:
-        user_defined_params = get_parameters(material, user_params)
-    else:
-        user_defined_params = get_parameters(material)
+    user_defined_params = get_parameters(material)
         
     # Reconstruct band structure object with loaded data
     bs = BandStructure(
@@ -654,8 +840,67 @@ def main():
         
         # Display nwkpy library version and build information
         library_header()
+        
+        # Display log file location on stdout for user reference
+        print(f'\nAll log messages sent to file: {log_file}\n')
 
-    # Synchronize after header display
+
+    comm.Barrier()
+    
+    # =============================================================================
+    # VALIDATION OF INPUT PARAMETERS
+    # =============================================================================
+
+    if rank == 0:
+        logger.info("")
+        logger.info(f"Input read from file {indata}")
+
+        try:
+            check_required_parameters()     # check if all inputs are present
+            consistency_checks()            # check if all inputs are consistent
+            error = None
+            
+        except ValueError as e:
+            error = str(e)
+    else:
+        error = None
+
+    # Broadcast del risultato
+    error = comm.bcast(error, root=0)
+
+    # Se c'è errore, TUTTI i processi escono
+    if error is not None:
+        execution_aborted(error,rank=rank)
+
+    if rank == 0:
+        logger.info('Input parameter validation completed successfully')
+
+    comm.Barrier()
+    
+    # =============================================================================
+    # MATERIAL PARAMETER DEFINITION AND LOGGING
+    # =============================================================================
+
+    # Create user-defined material parameter dictionary for computational classes
+    # user_defined_params = {
+    #     material[0]: params[material[0]], # Core material parameters from database
+    #     material[1]: params[material[1]]  # Shell material parameters from database
+    # }
+
+    user_defined_params = get_parameters(material)
+    
+    if rank == 0:
+        logger.info("")
+
+        # Create user-defined material parameter dictionary for computational classes
+        if user_parameters_file is not None:
+            logger.info(f"User parameters read from file {user_parameters_file}")
+
+        # Log material parameters for each region
+        for m in material:
+            log_material_params(m, user_defined_params[m])
+
+    # Synchronization after broadcast
     comm.Barrier()
     
     # =========================================================================
@@ -699,56 +944,7 @@ def main():
     mu = chemical_potential
 
     if MPI_debug:                               # to all ranks!
-        MPI_debug_setup(outdata_path+'/DEBUG')  # create DEBUG directory
-
-    # =============================================================================
-    # MATERIAL PARAMETER DEFINITION AND LOGGING
-    # =============================================================================
-
-    # Create user-defined material parameter dictionary for computational classes
-    # user_defined_params = {
-    #     material[0]: params[material[0]], # Core material parameters from database
-    #     material[1]: params[material[1]]  # Shell material parameters from database
-    # }
-    user_defined_params = None
-
-    if rank == 0:
-        logger.info("")
-
-        # Create user-defined material parameter dictionary for computational classes
-        if user_params is not None:
-            logger.info(f"User parameters read from file {user_parameters_file}")
-            user_defined_params = get_parameters(material, user_params)
-        else:
-            user_defined_params = get_parameters(material)
-
-        # Log material parameters for each region
-        for m in material:
-            log_material_params(m, user_defined_params[m])
-
-    # Broadcast of parameters to all processes
-    user_defined_params = comm.bcast(user_defined_params, root=0)
-
-    # Synchronization after broadcast
-    comm.Barrier()
-
-    if rank == 0 and size > 1:
-        logger.info(f'Material parameters broadcasted to all {size} MPI processes')
-
-    # =============================================================================
-    # VALIDATION OF INPUT PARAMETERS
-    # =============================================================================
-    if rank == 0:
-
-        try:                              # Attempt parameter validation
-            consistency_checks(indata)  
-        except ValueError as e:           # Handle validation failures gracefully
-            execution_aborted(e)          # Log error and terminate with proper cleanup
-        else:                             # Validation successful - proceed with calculation
-            logger.info("")
-            logger.info(f'Input parameters consistency checks passed')
-
-    comm.Barrier()
+        MPI_debug_setup(os.path.join(outdata_path, 'DEBUG'))  # create DEBUG directory
 
     # =============================================================================
     # PLOT GENERATION MODE
@@ -762,7 +958,7 @@ def main():
                 logger.error(f'plot_only_mode = {plot_only_mode} is incompatible with MPI parallelization')
                 raise ValueError('MPI incompatible - Run plot-only mode on a single process')
         except ValueError as e:
-            execution_aborted(e)
+            execution_aborted(e, rank=rank)
 
         logger.info("")
         logger.info('Running in plot-only mode - no calculations performed')
@@ -774,10 +970,10 @@ def main():
             if not success:
                 raise ValueError("Plot generation failed")
         except ValueError as e:
-            execution_aborted(e)
+            execution_aborted(e, rank=rank)
         else:
-            execution_successful()    # Log successful completion
-        return                        # Exit main function after plot generation
+            execution_successful(rank=rank)    # Log successful completion
+        return                              # Exit main function after plot generation
     
     # =========================================================================
     # K-POINT DISTRIBUTION FOR MPI PARALLELIZATION
@@ -805,13 +1001,9 @@ def main():
     kfin = kin + kmaxlocal
     kzslice = np.s_[kin:kfin]
 
-    try:
-        if size*kmaxlocal != number_k_pts:
-            logger.error(f"the number of k points {number_k_pts} not a multple of the number of process {size}")
-            raise ValueError("Inconsitent number of processes")
-    except ValueError as e:           # Handle validation failures gracefully
-        execution_aborted(e)          # Log error and terminate with proper cleanup
-           
+    if size*kmaxlocal != number_k_pts:
+        execution_aborted(f"the number of k points {number_k_pts} not a multple of the number of process {size}",rank=rank) 
+
     # =========================================================================
     # LOGGING INPUTS AND CONFIGURATIONS
     # =========================================================================
@@ -1082,7 +1274,9 @@ def main():
         # Save overlap matrix in sparse format for memory efficiency
         save_npz(outdata_path + "/B.npz", bs.solver[0].bgl)
         logger.info(FMT_STR.format('Overlap matrix (sparse)', f'{directory_name}/B.npz'))
-        
+
+    comm.Barrier()
+    
     # =========================================================================
     # VISUALIZATION AND PLOTTING
     # =========================================================================
@@ -1096,8 +1290,7 @@ def main():
     # =========================================================================
 
     # Log successful completion of the entire calculation
-    if rank==0:
-        execution_successful()             
+    execution_successful(rank=rank)         
              
 # =============================================================================
 # SCRIPT EXECUTION ENTRY POINT

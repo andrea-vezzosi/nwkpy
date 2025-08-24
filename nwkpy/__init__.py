@@ -51,7 +51,7 @@ def library_header():
         " ",
         "=" * 80,
         f"{name} v{version} initialized on {current_date}",
-        "A Object Oriented Python library for self-consistent k.p calculations in semiconductor nanowires", 
+        "A OO Python library for self-consistent k.p calculations in semiconductor nanowires", 
         "   For more information visit: https://github.com/andrea-vezzosi/nwkpy",
         "   If you use this library for research please cite Phys. Rev. B 105, 245303 (2022)",
         # "   If you use MEFA option please also cite _____.",
