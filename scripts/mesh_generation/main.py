@@ -80,9 +80,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-if __name__ == '__main__':
-    print(f'\nAll log messages sent to file: {log_file}\n')
-
 # =============================================================================
 # MESH FILES
 # =============================================================================
@@ -167,9 +164,7 @@ def main():
         material[1]: carrier[1]
     }
 
-    R_c = width[0]                          # core radius
-    shell_width = width[1]                  # shell thickness
-    total_width = (R_c + shell_width) * 2   # total diameter
+    total_width = (width[0] + width[1]) * 2   # total diameter
 
     edges_per_border = {
         'nC1': edges[0],
@@ -189,8 +184,8 @@ def main():
     logger.info("---------------------")
     logger.info('              Material     Carrier      Dimension [nm]')
     logger.info('-' * 66)
-    logger.info(f"1 (core)  :   {material[0]:<12} {carrier[0]:<12} {R_c:<12.2f} (radius)")
-    logger.info(f"2 (shell) :   {material[1]:<12} {carrier[1]:<12} {shell_width:<12.2f} (thickness)")
+    logger.info(f"1 (core)  :   {material[0]:<12} {carrier[0]:<12} {width[0]:<12.2f}")
+    logger.info(f"2 (shell) :   {material[1]:<12} {carrier[1]:<12} {width[1]:<12.2f}")
     logger.info('-' * 66)
     logger.info('')
     logger.info(f"Total nanowire diameter: {total_width:.2f} nm")
@@ -211,7 +206,7 @@ def main():
         Hex2regsymm(
             mesh_name=mesh_file,
             total_width=total_width,
-            shell_width=shell_width,
+            shell_width=width[1],
             edges_per_border=edges_per_border
         )
         logger.info('Mesh generation completed successfully')
@@ -294,6 +289,9 @@ def main():
 # =============================================================================
 
 if __name__ == '__main__':
+
+    print(f'\nAll log messages sent to file: {log_file}\n')
+
     tic()
     main()
     toc()
