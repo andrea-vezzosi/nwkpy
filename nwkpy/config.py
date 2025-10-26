@@ -23,7 +23,7 @@ Usage:
 # =============================================================================
 # INPUT/OUTPUT FORMATTING CONSTANTS
 # =============================================================================
-
+ 
 # Text formatting and spacing controls
 DLM = '   '                              # Delimiter for text files and log spacings
                                          # Creates consistent column alignment of log messages

@@ -6,7 +6,7 @@ Hexagonal Core-Shell Nanowire Mesh Generator
 This script generates finite element meshes for core-shell nanowire structures
 using FreeFem++ through the nwkpy interface. The generated meshes are optimized 
 for electronic structure calculations and electrostatic simulations.
-
+ 
 Key Features:
 - Hexagonal cross-section geometry 
 - One- (core) or two-region (core + shell) structures 
